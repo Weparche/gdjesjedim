@@ -8,6 +8,7 @@ import GuestsPage from './pages/GuestsPage.jsx'
 import TablesPage from './pages/TablesPage.jsx'
 import PublishPage from './pages/PublishPage.jsx'
 import SharePage from './pages/SharePage.jsx'
+import PublicEventPage from './pages/PublicEventPage.jsx'
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
               <Route path="/create/tables" element={<TablesPage />} />
               <Route path="/create/publish" element={<PublishPage />} />
               <Route path="/create/share" element={<SharePage />} />
+              <Route path="/e/:slug" element={<PublicEventPage />} />
             </Routes>
           </div>
         </EventDraftProvider>
