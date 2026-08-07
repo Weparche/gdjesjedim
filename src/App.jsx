@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { EventDraftProvider } from './context/EventDraftContext.jsx'
 
 function LandingPlaceholder() {
   return (
@@ -11,11 +12,13 @@ function LandingPlaceholder() {
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="mx-auto max-w-[480px] min-h-screen bg-ivory">
-        <Routes>
-          <Route path="/" element={<LandingPlaceholder />} />
-        </Routes>
-      </div>
+      <EventDraftProvider>
+        <div className="mx-auto max-w-[480px] min-h-screen bg-ivory">
+          <Routes>
+            <Route path="/" element={<LandingPlaceholder />} />
+          </Routes>
+        </div>
+      </EventDraftProvider>
     </BrowserRouter>
   )
 }
