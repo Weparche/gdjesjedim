@@ -10,6 +10,13 @@ import InvitationPreview from '../components/upload/InvitationPreview.jsx'
 import { mockExtractedData } from '../lib/mockExtraction.js'
 import { useEventDraft } from '../context/EventDraftContext.jsx'
 
+const SCHEDULE_ICONS = [MapPin, Utensils]
+
+function formatCroatianDate(isoDate) {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  return `${day}.${month}.${year}.`
+}
+
 export default function UploadPage() {
   const navigate = useNavigate()
   const { setExtractedData } = useEventDraft()
@@ -44,16 +51,17 @@ export default function UploadPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar size={16} strokeWidth={1.5} className="text-charcoal-soft" aria-hidden="true" />
-                  <dd>26.9.2026.</dd>
+                  <dd>{formatCroatianDate(data.date)}</dd>
                 </div>
-                <div className="flex items-center gap-2">
-                  <MapPin size={16} strokeWidth={1.5} className="text-charcoal-soft" aria-hidden="true" />
-                  <dd>12:00 · Crkva Sv. Mati Slobode</dd>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Utensils size={16} strokeWidth={1.5} className="text-charcoal-soft" aria-hidden="true" />
-                  <dd>13:00 · Lido</dd>
-                </div>
+                {data.scheduleItems.map((item, index) => {
+                  const Icon = SCHEDULE_ICONS[index] ?? MapPin
+                  return (
+                    <div key={`${item.time}-${item.locationName}`} className="flex items-center gap-2">
+                      <Icon size={16} strokeWidth={1.5} className="text-charcoal-soft" aria-hidden="true" />
+                      <dd>{item.time} · {item.locationName}</dd>
+                    </div>
+                  )
+                })}
               </dl>
             </div>
 
