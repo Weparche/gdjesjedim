@@ -1,14 +1,21 @@
-import { createContext, useCallback, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
 const ToastContext = createContext(null)
 
 export function ToastProvider({ children }) {
   const [message, setMessage] = useState(null)
+  const timeoutRef = useRef(null)
 
   const showToast = useCallback((msg) => {
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current)
+    }
     setMessage(msg)
-    window.setTimeout(() => setMessage(null), 2500)
+    timeoutRef.current = window.setTimeout(() => {
+      setMessage(null)
+      timeoutRef.current = null
+    }, 2500)
   }, [])
 
   return (
