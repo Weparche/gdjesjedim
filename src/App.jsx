@@ -6,6 +6,7 @@ import UploadPage from './pages/UploadPage.jsx'
 import ConfirmPage from './pages/ConfirmPage.jsx'
 import GuestsPage from './pages/GuestsPage.jsx'
 import TablesPage from './pages/TablesPage.jsx'
+import PublishPage from './pages/PublishPage.jsx'
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
               <Route path="/create/confirm" element={<ConfirmPage />} />
               <Route path="/create/guests" element={<GuestsPage />} />
               <Route path="/create/tables" element={<TablesPage />} />
+              <Route path="/create/publish" element={<PublishPage />} />
             </Routes>
           </div>
         </EventDraftProvider>
