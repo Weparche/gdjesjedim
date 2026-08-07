@@ -1,0 +1,30 @@
+{
+  "name": "gdjesjedim",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:unit": "node --test src",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.2.4",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.11.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-router-dom": "^7.14.2",
+    "tailwindcss": "^4.2.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "playwright": "^1.60.0",
+    "vite": "^8.0.10",
+    "vite-plugin-pwa": "^1.0.3"
+  }
+}
