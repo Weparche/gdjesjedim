@@ -43,6 +43,15 @@ test('addGuests computes normalizedName and assignGuestToTable links a table', a
   assert.equal(updated.tableId, table.id)
 })
 
+test('removeGuest deletes the guest', async () => {
+  const repo = freshRepo()
+  const event = await repo.createEvent({ title: 'Krštenje', type: 'christening', date: '2026-09-26' })
+  const [guest] = await repo.addGuests(event.id, ['Ivan Gorupić'])
+  await repo.removeGuest(guest.id)
+  const remaining = await repo.getGuests(event.id)
+  assert.equal(remaining.length, 0)
+})
+
 test('searchGuest tolerates case, diacritics, and partial name', async () => {
   const repo = freshRepo()
   const event = await repo.createEvent({ title: 'Krštenje', type: 'christening', date: '2026-09-26' })

@@ -131,6 +131,12 @@ export function createLocalRepository(storage) {
       })
     },
 
+    async removeGuest(id) {
+      return withDb((db) => {
+        db.guests = db.guests.filter((g) => g.id !== id)
+      })
+    },
+
     async assignGuestToTable(guestId, tableId) {
       return withDb((db) => {
         const guest = db.guests.find((g) => g.id === guestId)
