@@ -1,4 +1,4 @@
-import { test } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 // Output directory can be overridden via SCREENSHOT_DIR env var so the same spec can be
@@ -29,6 +29,7 @@ test('capture all 8 primary screens', async ({ page }) => {
 
   await page.locator('#guest-list').fill('Ivan Gorupić\nAna Gorupić\nMarko Horvat\nIvana Horvat\nPetar Marić')
   await page.getByRole('button', { name: /Dodaj 5 gostiju/ }).click()
+  await expect(page.getByText('Ivan Gorupić')).toBeVisible()
   await page.screenshot({ path: `${outDir}/03-guests.png` })
   await page.getByRole('button', { name: 'Nastavi na stolove' }).click()
 
@@ -37,6 +38,7 @@ test('capture all 8 primary screens', async ({ page }) => {
   }
   await page.getByRole('button', { name: 'Ivan Gorupić' }).click()
   await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 3').click()
+  await page.getByRole('dialog', { name: 'Odaberi stol' }).waitFor({ state: 'hidden' })
   await page.screenshot({ path: `${outDir}/04-tables.png` })
   await page.getByRole('button', { name: 'Nastavi na objavu' }).click()
 
