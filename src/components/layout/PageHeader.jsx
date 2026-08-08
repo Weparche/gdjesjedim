@@ -19,7 +19,7 @@ export default function PageHeader({ title, onBack, step, totalSteps }) {
             <ChevronLeft size={22} strokeWidth={1.5} />
           </button>
         )}
-        <h1 className="font-ui text-lg font-semibold text-charcoal">{title}</h1>
+        <h1 className="font-display text-2xl leading-tight text-charcoal">{title}</h1>
       </div>
       {step && totalSteps && <StepIndicator step={step} totalSteps={totalSteps} />}
     </header>

@@ -20,7 +20,7 @@ export default function ShareLinkCard({ url }) {
       <button
         type="button"
         onClick={copyLink}
-        className="flex min-h-[52px] w-full items-center gap-3 rounded-md bg-cream px-4 font-ui text-sm font-semibold text-charcoal"
+        className="flex min-h-[52px] w-full items-center gap-3 rounded-md bg-cream px-4 font-ui text-base font-semibold text-charcoal"
       >
         <Copy size={18} strokeWidth={1.5} aria-hidden="true" />
         Kopiraj link
@@ -30,7 +30,7 @@ export default function ShareLinkCard({ url }) {
         href={waHref}
         target="_blank"
         rel="noreferrer"
-        className="flex min-h-[52px] w-full items-center gap-3 rounded-md bg-whatsapp/15 px-4 font-ui text-sm font-semibold text-charcoal"
+        className="flex min-h-[52px] w-full items-center gap-3 rounded-md bg-whatsapp/15 px-4 font-ui text-base font-semibold text-charcoal"
       >
         <MessageCircle size={18} strokeWidth={1.5} className="text-whatsapp" aria-hidden="true" />
         Pošalji na WhatsApp

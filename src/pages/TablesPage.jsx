@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, ChevronRight } from 'lucide-react'
 import AppShell from '../components/layout/AppShell.jsx'
 import PageHeader from '../components/layout/PageHeader.jsx'
 import PrimaryButton from '../components/buttons/PrimaryButton.jsx'
@@ -49,6 +49,9 @@ export default function TablesPage() {
     return guests.filter((g) => g.tableId === tableId).length
   }
 
+  const assignedCount = guests.filter((g) => g.tableId != null).length
+  const activeGuest = guests.find((g) => g.id === activeGuestId)
+
   return (
     <AppShell>
       <PageHeader title="3. Stolovi" step={3} totalSteps={4} onBack={() => navigate('/create/guests')} />
@@ -69,7 +72,15 @@ export default function TablesPage() {
       </div>
 
       <div className="mt-6">
-        <p className="font-ui text-sm font-semibold text-charcoal-soft">Gosti</p>
+        <div className="flex items-baseline justify-between">
+          <p className="font-ui text-sm font-semibold text-charcoal-soft">Gosti</p>
+          <p className="font-ui text-sm text-charcoal-soft">
+            {assignedCount}/{guests.length} raspoređeno
+          </p>
+        </div>
+        <p className="mt-1 font-ui text-sm text-charcoal-soft">
+          Dodirni ime gosta i odaberi njegov stol.
+        </p>
         <ul className="mt-2 rounded-lg bg-white px-4 shadow-card">
           {guests.map((guest) => {
             const table = tables.find((t) => t.id === guest.tableId)
@@ -78,12 +89,20 @@ export default function TablesPage() {
                 <button
                   type="button"
                   onClick={() => setActiveGuestId(guest.id)}
-                  className="min-h-[44px] flex-1 text-left font-ui text-sm text-charcoal"
+                  className="flex min-h-[44px] flex-1 items-center gap-2 text-left font-ui text-base text-charcoal"
                 >
                   {guest.name}
+                  {!table && (
+                    <ChevronRight
+                      size={16}
+                      strokeWidth={1.5}
+                      className="shrink-0 text-charcoal-soft"
+                      aria-hidden="true"
+                    />
+                  )}
                 </button>
                 {table && (
-                  <span className="rounded-pill bg-cream px-3 py-1 font-ui text-xs font-semibold text-gold-deep">
+                  <span className="rounded-pill bg-cream px-3 py-1 font-ui text-xs font-semibold text-charcoal">
                     {table.name}
                   </span>
                 )}
@@ -104,6 +123,8 @@ export default function TablesPage() {
         onClose={() => setActiveGuestId(null)}
         tables={tables}
         onSelect={assign}
+        guestName={activeGuest?.name}
+        assignedTableId={activeGuest?.tableId}
       />
     </AppShell>
   )

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { PartyPopper } from 'lucide-react'
+import { PartyPopper, Heart } from 'lucide-react'
 import AppShell from '../components/layout/AppShell.jsx'
 import ShareLinkCard from '../components/share/ShareLinkCard.jsx'
 import QRCard from '../components/share/QRCard.jsx'
@@ -25,7 +25,7 @@ export default function SharePage() {
           <PartyPopper size={28} strokeWidth={1.5} className="text-blush" aria-hidden="true" />
         </div>
         <h1 className="mt-4 font-display text-2xl text-charcoal">Stranica je spremna</h1>
-        <p className="mt-2 font-ui text-sm leading-relaxed text-charcoal-soft">
+        <p className="mt-2 font-ui text-base leading-relaxed text-charcoal-soft">
           Podijelite link s gostima kako bi mogli pronaći svoj stol i raspored.
         </p>
       </div>
@@ -34,6 +34,13 @@ export default function SharePage() {
         <ShareLinkCard url={url} />
         <QRCard url={url} />
       </div>
+
+      {/* Blush is reserved for the decorative heart here: as running text on
+          ivory it measures 1.80:1, well under AA. */}
+      <p className="mt-10 flex items-center justify-center gap-1.5 font-ui text-sm text-charcoal-soft">
+        <Heart size={14} strokeWidth={1.5} className="text-blush" aria-hidden="true" />
+        Hvala što koristite GdjeSjedim.hr
+      </p>
     </AppShell>
   )
 }

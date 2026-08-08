@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useEffect } from 'react'
 
-export default function BottomSheet({ open, onClose, title, children }) {
+export default function BottomSheet({ open, onClose, title, subtitle, children }) {
   useEffect(() => {
     if (!open) return
     const handleKey = (e) => {
@@ -36,8 +36,13 @@ export default function BottomSheet({ open, onClose, title, children }) {
             transition={{ duration: 0.25, ease: 'easeOut' }}
             className="relative z-10 w-full max-w-[480px] rounded-t-lg bg-white px-5 pb-8 pt-4 shadow-elevated"
           >
-            <div className="flex items-center justify-between pb-3">
-              <h2 className="font-ui text-base font-semibold text-charcoal">{title}</h2>
+            <div className="flex items-start justify-between pb-3">
+              <div className="min-w-0 py-1">
+                <h2 className="font-display text-xl leading-tight text-charcoal">{title}</h2>
+                {subtitle && (
+                  <p className="mt-0.5 truncate font-ui text-sm text-charcoal-soft">{subtitle}</p>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={onClose}

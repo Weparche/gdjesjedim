@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Users, Armchair, MapPin } from 'lucide-react'
+import { pluralizeGosti, pluralizeStolovi, pluralizeLokacije } from '../lib/plural.js'
 import AppShell from '../components/layout/AppShell.jsx'
 import PageHeader from '../components/layout/PageHeader.jsx'
 import PrimaryButton from '../components/buttons/PrimaryButton.jsx'
@@ -19,7 +21,12 @@ export default function PublishPage() {
       repository.getScheduleItems(draft.event.id)
     ])
     const locations = new Set(scheduleItems.map((s) => s.locationName))
-    setSummary({ guestCount: guests.length, tableCount: tables.length, locationCount: locations.size })
+    setSummary({
+      guestCount: guests.length,
+      tableCount: tables.length,
+      locationCount: locations.size,
+      unassignedCount: guests.filter((g) => g.tableId == null).length
+    })
   }, [draft.event])
 
   useEffect(() => {
@@ -49,11 +56,27 @@ export default function PublishPage() {
       <div className="mt-6 rounded-lg bg-white p-5 shadow-card">
         <p className="font-display text-xl text-charcoal">{draft.event.title}</p>
         <p className="mt-1 font-ui text-sm text-charcoal-soft">{displayDate}</p>
-        <dl className="mt-4 space-y-1 font-ui text-sm text-charcoal">
-          <div>{summary.guestCount} gosta</div>
-          <div>{summary.tableCount} stola</div>
-          <div>{summary.locationCount} lokacije</div>
-        </dl>
+        <ul className="mt-4 space-y-2 font-ui text-sm text-charcoal">
+          <li className="flex items-center gap-2">
+            <Users size={16} strokeWidth={1.5} className="shrink-0 text-gold-deep" aria-hidden="true" />
+            {summary.guestCount} {pluralizeGosti(summary.guestCount)}
+          </li>
+          <li className="flex items-center gap-2">
+            <Armchair size={16} strokeWidth={1.5} className="shrink-0 text-gold-deep" aria-hidden="true" />
+            {summary.tableCount} {pluralizeStolovi(summary.tableCount)}
+          </li>
+          <li className="flex items-center gap-2">
+            <MapPin size={16} strokeWidth={1.5} className="shrink-0 text-gold-deep" aria-hidden="true" />
+            {summary.locationCount} {pluralizeLokacije(summary.locationCount)}
+          </li>
+        </ul>
+
+        {summary.unassignedCount > 0 && (
+          <p className="mt-4 rounded-md bg-cream p-3 font-ui text-sm text-charcoal">
+            {summary.unassignedCount} {pluralizeGosti(summary.unassignedCount)} još nema stol. Možeš objaviti
+            sada i rasporediti ih kasnije.
+          </p>
+        )}
       </div>
 
       <div className="mt-6">

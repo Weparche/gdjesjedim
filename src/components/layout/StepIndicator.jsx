@@ -9,7 +9,7 @@ export default function StepIndicator({ step, totalSteps }) {
               n === step
                 ? 'bg-gold text-white'
                 : n < step
-                ? 'border-2 border-gold text-gold'
+                ? 'border-2 border-gold text-charcoal'
                 : 'bg-cream text-charcoal-soft'
             }`}
           >

@@ -10,14 +10,28 @@ test.beforeAll(() => {
   fs.mkdirSync(outDir, { recursive: true })
 })
 
+// Routes fade+slide in over 200ms (PageTransition). Playwright's `visible` check
+// ignores opacity, so a bare waitFor() can fire mid-fade and capture a washed-out
+// page. Wait for every running animation to finish before each screenshot.
+async function settle(page) {
+  await page
+    .waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'), null, {
+      timeout: 3000
+    })
+    .catch(() => {})
+  await page.waitForTimeout(150)
+}
+
 test('capture all 8 primary screens', async ({ page }) => {
   await page.goto('/')
+  await settle(page)
   await page.screenshot({ path: `${outDir}/01-landing.png` })
 
   await page.getByRole('button', { name: 'Krštenje' }).click()
   await page.getByRole('button', { name: 'Napravi besplatno' }).click()
   await page.waitForURL(/\/create\/upload/)
   await page.getByRole('button', { name: /Učitaj pozivnicu/ }).waitFor()
+  await settle(page)
   await page.screenshot({ path: `${outDir}/02-upload.png` })
 
   const fileChooserPromise = page.waitForEvent('filechooser')
@@ -30,6 +44,7 @@ test('capture all 8 primary screens', async ({ page }) => {
   await page.locator('#guest-list').fill('Ivan Gorupić\nAna Gorupić\nMarko Horvat\nIvana Horvat\nPetar Marić')
   await page.getByRole('button', { name: /Dodaj 5 gostiju/ }).click()
   await expect(page.getByText('Ivan Gorupić')).toBeVisible()
+  await settle(page)
   await page.screenshot({ path: `${outDir}/03-guests.png` })
   await page.getByRole('button', { name: 'Nastavi na stolove' }).click()
 
@@ -39,26 +54,31 @@ test('capture all 8 primary screens', async ({ page }) => {
   await page.getByRole('button', { name: 'Ivan Gorupić' }).click()
   await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 3').click()
   await page.getByRole('dialog', { name: 'Odaberi stol' }).waitFor({ state: 'hidden' })
+  await settle(page)
   await page.screenshot({ path: `${outDir}/04-tables.png` })
   await page.getByRole('button', { name: 'Nastavi na objavu' }).click()
 
   await page.waitForURL(/\/create\/publish/)
   await page.getByRole('button', { name: 'Objavi stranicu' }).waitFor()
+  await settle(page)
   await page.screenshot({ path: `${outDir}/05-publish.png` })
   await page.getByRole('button', { name: 'Objavi stranicu' }).click()
   await page.waitForURL(/\/create\/share/)
   const slugLocator = page.getByText(/\/marijino-krstenje/)
   await slugLocator.waitFor()
+  await settle(page)
   await page.screenshot({ path: `${outDir}/06-share.png` })
 
   const slugText = await slugLocator.textContent()
   const slug = slugText.trim().split('/').pop()
 
   await page.goto(`/e/${slug}`)
+  await settle(page)
   await page.screenshot({ path: `${outDir}/07-guest-search.png` })
   await page.getByLabel('Upiši svoje ime').fill('Ivan Gorupić')
   await page.getByRole('button', { name: 'Pronađi moj stol' }).click()
   await page.getByText('STOL 3').waitFor()
   await page.waitForTimeout(400) // let the 0.3s framer-motion fade-in settle before capture
+  await settle(page)
   await page.screenshot({ path: `${outDir}/08-guest-result.png` })
 })

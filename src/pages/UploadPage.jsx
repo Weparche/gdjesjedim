@@ -34,14 +34,20 @@ export default function UploadPage() {
 
       <div className="mt-6">
         {!uploaded ? (
-          <InvitationUploader onFileSelected={() => setUploaded(true)} />
+          <div>
+            <p className="mb-3 font-ui text-base leading-relaxed text-charcoal-soft">
+              Učitaj sliku pozivnice. Pročitat ćemo naziv proslave, datum i raspored, a ti ih možeš
+              ispraviti u sljedećem koraku.
+            </p>
+            <InvitationUploader onFileSelected={() => setUploaded(true)} />
+          </div>
         ) : (
           <div className="space-y-4">
             <InvitationPreview />
 
             <div className="rounded-lg bg-white p-4 shadow-card">
-              <p className="flex items-center gap-2 font-ui text-sm font-semibold text-gold">
-                <Sparkles size={16} strokeWidth={1.5} aria-hidden="true" />
+              <p className="flex items-center gap-2 font-ui text-sm font-semibold text-charcoal">
+                <Sparkles size={16} strokeWidth={1.5} className="text-gold-deep" aria-hidden="true" />
                 AI je pročitao podatke
               </p>
               <dl className="mt-3 space-y-2 font-ui text-sm text-charcoal">

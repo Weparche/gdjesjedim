@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GripVertical, X } from 'lucide-react'
+import { X } from 'lucide-react'
 
 export default function GuestRow({ guest, onRemove, onRename }) {
   const [editing, setEditing] = useState(false)
@@ -13,7 +13,6 @@ export default function GuestRow({ guest, onRemove, onRename }) {
 
   return (
     <li className="flex items-center gap-2 border-b border-cream py-2 last:border-b-0">
-      <GripVertical size={18} strokeWidth={1.5} className="text-charcoal-soft/50" aria-hidden="true" />
       {editing ? (
         <input
           autoFocus
@@ -21,13 +20,13 @@ export default function GuestRow({ guest, onRemove, onRename }) {
           onChange={(e) => setValue(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => e.key === 'Enter' && commit()}
-          className="min-h-[44px] flex-1 rounded-md border border-gold px-2 font-ui text-sm text-charcoal"
+          className="min-h-[44px] flex-1 rounded-md border border-gold px-2 font-ui text-base text-charcoal"
         />
       ) : (
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="min-h-[44px] flex-1 truncate text-left font-ui text-sm text-charcoal"
+          className="min-h-[44px] flex-1 truncate text-left font-ui text-base text-charcoal"
         >
           {guest.name}
         </button>

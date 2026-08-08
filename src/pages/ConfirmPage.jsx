@@ -35,7 +35,7 @@ export default function ConfirmPage() {
 
   return (
     <AppShell>
-      <PageHeader title="1. Učitaj pozivnicu" step={1} totalSteps={4} />
+      <PageHeader title="Potvrdi podatke" step={1} totalSteps={4} onBack={() => navigate('/create/upload')} />
       <div className="mt-6 space-y-4">
         <ExtractedDataCard title={title} date={displayDate} scheduleItems={scheduleItems} />
         <PrimaryButton onClick={confirm}>Potvrdi podatke</PrimaryButton>

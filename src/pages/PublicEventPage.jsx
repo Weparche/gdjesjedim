@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { Heart } from 'lucide-react'
 import AppShell from '../components/layout/AppShell.jsx'
 import SearchGuestCard from '../components/guestpage/SearchGuestCard.jsx'
 import TableResultCard from '../components/guestpage/TableResultCard.jsx'
@@ -11,7 +12,10 @@ export default function PublicEventPage() {
   const [event, setEvent] = useState(undefined)
   const [scheduleItems, setScheduleItems] = useState([])
   const [result, setResult] = useState(null)
-  const [notFound, setNotFound] = useState(false)
+  // null | 'notFound' | 'noTable' — a guest who exists but has no table yet used
+  // to be told they don't exist, so they would retype their own name forever.
+  const [status, setStatus] = useState(null)
+  const [foundName, setFoundName] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -26,10 +30,16 @@ export default function PublicEventPage() {
     const found = await repository.searchGuest(slug, query)
     if (found && found.table) {
       setResult(found)
-      setNotFound(false)
+      setFoundName(found.guest.name)
+      setStatus(null)
+    } else if (found) {
+      setResult(null)
+      setFoundName(found.guest.name)
+      setStatus('noTable')
     } else {
       setResult(null)
-      setNotFound(true)
+      setFoundName('')
+      setStatus('notFound')
     }
   }
 
@@ -51,11 +61,11 @@ export default function PublicEventPage() {
     <AppShell>
       <div className="text-center">
         <h1 className="font-display text-2xl text-charcoal">{event.title}</h1>
-        <p className="mt-1 font-ui text-sm text-charcoal-soft">{displayDate}</p>
+        <p className="mt-1 font-ui text-base text-charcoal-soft">{displayDate}</p>
       </div>
 
       <div className="mt-6">
-        <SearchGuestCard onSearch={handleSearch} notFound={notFound} />
+        <SearchGuestCard onSearch={handleSearch} status={status} guestName={foundName} />
       </div>
 
       {result && (
@@ -74,6 +84,13 @@ export default function PublicEventPage() {
           </ul>
         </div>
       )}
+
+      {/* Blush is reserved for the decorative heart here: as running text on
+          ivory it measures 1.80:1, well under AA. */}
+      <p className="mt-10 flex items-center justify-center gap-1.5 font-ui text-sm text-charcoal-soft">
+        <Heart size={14} strokeWidth={1.5} className="text-blush" aria-hidden="true" />
+        Hvala što ste s nama
+      </p>
     </AppShell>
   )
 }

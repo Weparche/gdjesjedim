@@ -26,9 +26,9 @@ export default function QRCard({ url }) {
         <a
           href={dataUrl}
           download="gdjesjedim-qr.png"
-          className="mt-3 inline-flex min-h-[44px] items-center gap-2 font-ui text-sm font-semibold text-gold-deep"
+          className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-md bg-cream font-ui text-base font-semibold text-charcoal"
         >
-          <QrCode size={18} strokeWidth={1.5} aria-hidden="true" />
+          <QrCode size={18} strokeWidth={1.5} className="text-gold-deep" aria-hidden="true" />
           Preuzmi QR
         </a>
       )}

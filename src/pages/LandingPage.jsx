@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Church, Gem, Cake, Wine, ArrowRight } from 'lucide-react'
+import { Church, Gem, Cake, Wine, ArrowRight, Armchair } from 'lucide-react'
 import AppShell from '../components/layout/AppShell.jsx'
 import PrimaryButton from '../components/buttons/PrimaryButton.jsx'
 import EventTypeCard from '../components/landing/EventTypeCard.jsx'
@@ -27,12 +27,12 @@ export default function LandingPage() {
   }
 
   return (
-    <AppShell>
-      <div className="flex items-center gap-2 pt-2">
-        <span className="font-display text-lg text-gold" aria-hidden="true">
-          🪑
+    <AppShell className="overflow-hidden">
+      <div className="flex items-center gap-3 pt-2">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-cream">
+          <Armchair size={20} strokeWidth={1.5} className="text-gold" aria-hidden="true" />
         </span>
-        <span className="font-display text-lg text-charcoal">GdjeSjedim.hr</span>
+        <span className="font-display text-xl text-charcoal">GdjeSjedim.hr</span>
       </div>
 
       <h1 className="mt-8 font-display text-4xl leading-tight text-charcoal">
@@ -47,13 +47,14 @@ export default function LandingPage() {
       </p>
 
       <div className="mt-6">
-        <PrimaryButton onClick={goToCreate}>
+        <PrimaryButton onClick={goToCreate} radius="rounded-pill">
           Napravi besplatno
-          <ArrowRight size={18} strokeWidth={2} />
+          <ArrowRight size={18} strokeWidth={1.5} />
         </PrimaryButton>
       </div>
 
-      <div className="mt-8 grid grid-cols-2 gap-3">
+      <p className="mt-8 font-ui text-sm font-semibold text-charcoal-soft">Kakva je proslava?</p>
+      <div className="mt-2 grid grid-cols-2 gap-3">
         {EVENT_TYPES.map(({ type, label, icon }) => (
           <EventTypeCard
             key={type}
