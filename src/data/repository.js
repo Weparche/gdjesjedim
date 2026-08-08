@@ -68,7 +68,11 @@ export function createLocalRepository(storage) {
     },
 
     async getEventBySlug(slug) {
-      return withDb((db) => db.events.find((e) => e.slug === slug))
+      return withDb((db) => {
+        const event = db.events.find((e) => e.slug === slug)
+        if (!event || event.published !== true) return undefined
+        return event
+      })
     },
 
     async updateEvent(id, patch) {
@@ -158,7 +162,7 @@ export function createLocalRepository(storage) {
     async searchGuest(slug, query) {
       return withDb((db) => {
         const event = db.events.find((e) => e.slug === slug)
-        if (!event) return null
+        if (!event || event.published !== true) return null
         const q = normalizeName(query)
         if (!q) return null
         const guest = db.guests.find((g) => g.eventId === event.id && g.normalizedName.includes(q))

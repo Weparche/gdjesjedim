@@ -5,8 +5,12 @@ export default function ShareLinkCard({ url }) {
   const { showToast } = useToast()
 
   async function copyLink() {
-    await navigator.clipboard.writeText(url)
-    showToast('Link kopiran')
+    try {
+      await navigator.clipboard.writeText(url)
+      showToast('Link kopiran')
+    } catch {
+      showToast('Kopiranje nije uspjelo')
+    }
   }
 
   const waHref = `https://wa.me/?text=${encodeURIComponent(url)}`

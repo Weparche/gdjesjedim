@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { EventDraftProvider } from './context/EventDraftContext.jsx'
 import { ToastProvider } from './components/common/Toast.jsx'
+import ErrorBoundary from './components/common/ErrorBoundary.jsx'
 import PageTransition from './components/layout/PageTransition.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import UploadPage from './pages/UploadPage.jsx'
@@ -17,6 +18,7 @@ export default function App() {
       <ToastProvider>
         <EventDraftProvider>
           <div className="mx-auto max-w-[480px] min-h-screen bg-ivory">
+            <ErrorBoundary>
             <PageTransition>
             <Routes>
               <Route path="/" element={<LandingPage />} />
@@ -29,6 +31,7 @@ export default function App() {
               <Route path="/e/:slug" element={<PublicEventPage />} />
             </Routes>
             </PageTransition>
+            </ErrorBoundary>
           </div>
         </EventDraftProvider>
       </ToastProvider>

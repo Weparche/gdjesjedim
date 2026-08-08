@@ -26,11 +26,19 @@ test('createEvent de-duplicates slugs', async () => {
   assert.equal(second.slug, 'rodendan-2')
 })
 
-test('getEventBySlug finds the created event', async () => {
+test('getEventBySlug finds the created event once published', async () => {
   const repo = freshRepo()
   const created = await repo.createEvent({ title: 'Vjenčanje', type: 'wedding', date: '2026-05-05' })
+  await repo.publishEvent(created.id)
   const found = await repo.getEventBySlug('vjencanje')
   assert.equal(found.id, created.id)
+})
+
+test('getEventBySlug returns undefined for an unpublished event', async () => {
+  const repo = freshRepo()
+  await repo.createEvent({ title: 'Vjenčanje', type: 'wedding', date: '2026-05-05' })
+  const found = await repo.getEventBySlug('vjencanje')
+  assert.equal(found, undefined)
 })
 
 test('addGuests computes normalizedName and assignGuestToTable links a table', async () => {
@@ -58,6 +66,7 @@ test('searchGuest tolerates case, diacritics, and partial name', async () => {
   const [guest] = await repo.addGuests(event.id, ['Ivan Gorupić'])
   const [table] = await repo.addTables(event.id, [{ name: 'Stol 3', capacity: 10 }])
   await repo.assignGuestToTable(guest.id, table.id)
+  await repo.publishEvent(event.id)
 
   for (const query of ['ivan gorupić', 'IVAN GORUPIĆ', 'Ivan']) {
     const result = await repo.searchGuest(event.slug, query)
@@ -70,7 +79,16 @@ test('searchGuest returns null when nobody matches', async () => {
   const repo = freshRepo()
   const event = await repo.createEvent({ title: 'Krštenje', type: 'christening', date: '2026-09-26' })
   await repo.addGuests(event.id, ['Ivan Gorupić'])
+  await repo.publishEvent(event.id)
   const result = await repo.searchGuest(event.slug, 'Nepostojeći Gost')
+  assert.equal(result, null)
+})
+
+test('searchGuest returns null for an unpublished event even when a guest matches', async () => {
+  const repo = freshRepo()
+  const event = await repo.createEvent({ title: 'Krštenje', type: 'christening', date: '2026-09-26' })
+  await repo.addGuests(event.id, ['Ivan Gorupić'])
+  const result = await repo.searchGuest(event.slug, 'Ivan')
   assert.equal(result, null)
 })
 

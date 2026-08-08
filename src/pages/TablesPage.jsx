@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, ChevronRight } from 'lucide-react'
 import AppShell from '../components/layout/AppShell.jsx'
@@ -16,6 +16,10 @@ export default function TablesPage() {
   const [tables, setTables] = useState([])
   const [guests, setGuests] = useState([])
   const [activeGuestId, setActiveGuestId] = useState(null)
+  const [isAddingTable, setIsAddingTable] = useState(false)
+  // Ref backs the reentrancy check so it's synchronous even if two clicks land
+  // before React re-renders the disabled button (state alone can't guarantee that).
+  const isAddingTableRef = useRef(false)
 
   const refresh = useCallback(async () => {
     if (!draft.event) return
@@ -35,8 +39,16 @@ export default function TablesPage() {
   if (!draft.event) return null
 
   async function addTable() {
-    await repository.addTables(draft.event.id, [{ name: `Stol ${tables.length + 1}`, capacity: 8 }])
-    refresh()
+    if (isAddingTableRef.current) return
+    isAddingTableRef.current = true
+    setIsAddingTable(true)
+    try {
+      await repository.addTables(draft.event.id, [{ name: `Stol ${tables.length + 1}`, capacity: 8 }])
+      await refresh()
+    } finally {
+      isAddingTableRef.current = false
+      setIsAddingTable(false)
+    }
   }
 
   async function assign(tableId) {
@@ -64,7 +76,7 @@ export default function TablesPage() {
           ))}
         </div>
         <div className="mt-3">
-          <SecondaryButton onClick={addTable} className="!min-h-[44px] justify-start gap-2">
+          <SecondaryButton onClick={addTable} disabled={isAddingTable} className="!min-h-[44px] justify-start gap-2">
             <Plus size={18} strokeWidth={1.5} aria-hidden="true" />
             Dodaj stol
           </SecondaryButton>

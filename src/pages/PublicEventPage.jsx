@@ -19,9 +19,13 @@ export default function PublicEventPage() {
 
   useEffect(() => {
     async function load() {
-      const found = await repository.getEventBySlug(slug)
-      setEvent(found ?? null)
-      if (found) setScheduleItems(await repository.getScheduleItems(found.id))
+      try {
+        const found = await repository.getEventBySlug(slug)
+        setEvent(found ?? null)
+        if (found) setScheduleItems(await repository.getScheduleItems(found.id))
+      } catch {
+        setEvent(null)
+      }
     }
     load()
   }, [slug])
