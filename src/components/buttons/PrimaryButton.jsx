@@ -15,7 +15,7 @@ export default function PrimaryButton({
       type={type}
       whileTap={{ scale: 0.97 }}
       transition={{ duration: 0.15 }}
-      className={`inline-flex min-h-[52px] w-full items-center justify-center gap-2 ${radius} bg-gold px-6 font-ui text-base font-semibold text-white shadow-card transition-colors hover:bg-gold-deep disabled:bg-cream disabled:text-charcoal-soft disabled:shadow-none disabled:pointer-events-none ${className}`}
+      className={`inline-flex min-h-[52px] w-full items-center justify-center gap-2 ${radius} bg-gold px-6 font-ui text-base font-semibold text-charcoal shadow-card transition-colors hover:bg-gold-deep disabled:bg-cream disabled:text-charcoal-soft disabled:shadow-none disabled:pointer-events-none ${className}`}
       {...props}
     >
       {children}

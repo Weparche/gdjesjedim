@@ -17,10 +17,27 @@ export function pluralHr(n, one, few, many) {
   return many
 }
 
-// "gost" collapses `one` and `few` onto the same surface form:
+// "gost" collapses `one` and `few` onto the same surface form. This is only
+// correct in the ACCUSATIVE frame ("Dodaj N gosta") used on the Guests page
+// (guest-import button) and the Guests page's "Dodaj N gosta" affordance:
 //   1 gosta, 2 gosta, 3 gosta, 4 gosta, 5 gostiju, 11 gostiju, 21 gosta
+// Do not reuse this for NOMINATIVE contexts (e.g. "N gost(a/iju) na popisu")
+// -- use `pluralizeGostiNominative` below for those instead.
 export function pluralizeGosti(n) {
   return pluralHr(n, 'gosta', 'gosta', 'gostiju')
+}
+
+// Nominative form of "gost", for contexts like "1 gost", "2 gosta", "5
+// gostiju" (e.g. a summary count, or as the subject of a sentence).
+export function pluralizeGostiNominative(n) {
+  return pluralHr(n, 'gost', 'gosta', 'gostiju')
+}
+
+// "nemati" (3rd person) agreement with a quantified noun phrase: singular
+// "nema" for one and for genitive-plural counts (5+), "nemaju" for the
+// paucal 2-4 case, which is grammatically plural.
+export function pluralizeNema(n) {
+  return pluralHr(n, 'nema', 'nemaju', 'nema')
 }
 
 export function pluralizeStolovi(n) {

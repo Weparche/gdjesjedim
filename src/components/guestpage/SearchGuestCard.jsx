@@ -50,7 +50,7 @@ export default function SearchGuestCard({ onSearch, status, guestName }) {
       <button
         type="submit"
         disabled={!query.trim()}
-        className="mt-3 inline-flex min-h-[56px] w-full items-center justify-center rounded-md bg-blush px-6 font-ui text-lg font-semibold text-white transition-colors disabled:bg-cream disabled:text-charcoal-soft disabled:pointer-events-none"
+        className="mt-3 inline-flex min-h-[56px] w-full items-center justify-center rounded-md bg-blush px-6 font-ui text-lg font-semibold text-charcoal transition-colors disabled:bg-cream disabled:text-charcoal-soft disabled:pointer-events-none"
       >
         Pronađi moj stol
       </button>

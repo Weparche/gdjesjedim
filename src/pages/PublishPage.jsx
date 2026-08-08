@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, Armchair, MapPin } from 'lucide-react'
-import { pluralizeGosti, pluralizeStolovi, pluralizeLokacije } from '../lib/plural.js'
+import { pluralizeGostiNominative, pluralizeStolovi, pluralizeLokacije, pluralizeNema } from '../lib/plural.js'
 import AppShell from '../components/layout/AppShell.jsx'
 import PageHeader from '../components/layout/PageHeader.jsx'
 import PrimaryButton from '../components/buttons/PrimaryButton.jsx'
@@ -59,7 +59,7 @@ export default function PublishPage() {
         <ul className="mt-4 space-y-2 font-ui text-sm text-charcoal">
           <li className="flex items-center gap-2">
             <Users size={16} strokeWidth={1.5} className="shrink-0 text-gold-deep" aria-hidden="true" />
-            {summary.guestCount} {pluralizeGosti(summary.guestCount)}
+            {summary.guestCount} {pluralizeGostiNominative(summary.guestCount)}
           </li>
           <li className="flex items-center gap-2">
             <Armchair size={16} strokeWidth={1.5} className="shrink-0 text-gold-deep" aria-hidden="true" />
@@ -73,8 +73,8 @@ export default function PublishPage() {
 
         {summary.unassignedCount > 0 && (
           <p className="mt-4 rounded-md bg-cream p-3 font-ui text-sm text-charcoal">
-            {summary.unassignedCount} {pluralizeGosti(summary.unassignedCount)} još nema stol. Možeš objaviti
-            sada i rasporediti ih kasnije.
+            {summary.unassignedCount} {pluralizeGostiNominative(summary.unassignedCount)} još{' '}
+            {pluralizeNema(summary.unassignedCount)} stol. Možeš objaviti sada i rasporediti ih kasnije.
           </p>
         )}
       </div>

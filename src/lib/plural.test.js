@@ -1,6 +1,13 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { pluralHr, pluralizeGosti, pluralizeStolovi, pluralizeLokacije } from './plural.js'
+import {
+  pluralHr,
+  pluralizeGosti,
+  pluralizeGostiNominative,
+  pluralizeNema,
+  pluralizeStolovi,
+  pluralizeLokacije
+} from './plural.js'
 
 test('pluralizeGosti follows Croatian numeral-noun agreement', () => {
   // paucal: counts ending in 1-4 take "gosta"
@@ -25,6 +32,35 @@ test('pluralizeGosti follows Croatian numeral-noun agreement', () => {
   assert.equal(pluralizeGosti(14), 'gostiju')
   assert.equal(pluralizeGosti(111), 'gostiju')
   assert.equal(pluralizeGosti(112), 'gostiju')
+})
+
+test('pluralizeGostiNominative distinguishes the three nominative forms', () => {
+  // one: counts ending in 1 (excluding teens) take "gost"
+  assert.equal(pluralizeGostiNominative(1), 'gost')
+  assert.equal(pluralizeGostiNominative(21), 'gost')
+
+  // few (paucal): counts ending in 2-4 (excluding teens) take "gosta"
+  assert.equal(pluralizeGostiNominative(2), 'gosta')
+  assert.equal(pluralizeGostiNominative(3), 'gosta')
+  assert.equal(pluralizeGostiNominative(4), 'gosta')
+  assert.equal(pluralizeGostiNominative(22), 'gosta')
+
+  // many (genitive plural): 5-20 and anything not ending in 1-4
+  assert.equal(pluralizeGostiNominative(5), 'gostiju')
+  assert.equal(pluralizeGostiNominative(11), 'gostiju')
+})
+
+test('pluralizeNema selects singular/plural verb agreement', () => {
+  // singular "nema" for one guest
+  assert.equal(pluralizeNema(1), 'nema')
+  // plural "nemaju" for the paucal 2-4 case (grammatically plural)
+  assert.equal(pluralizeNema(2), 'nemaju')
+  assert.equal(pluralizeNema(3), 'nemaju')
+  assert.equal(pluralizeNema(4), 'nemaju')
+  // singular "nema" again for genitive-plural counts (5+, teens)
+  assert.equal(pluralizeNema(5), 'nema')
+  assert.equal(pluralizeNema(11), 'nema')
+  assert.equal(pluralizeNema(21), 'nema')
 })
 
 test('pluralHr distinguishes all three forms', () => {
