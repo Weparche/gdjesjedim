@@ -50,7 +50,7 @@ async function publishMarijinoKrstenje(page) {
   return linkText.trim()
 }
 
-test('organizer happy path: create event, assign table, publish, guest finds table', async ({ page }) => {
+test('organizer happy path: create event, assign table, publish, guest finds table', async ({ page }, testInfo) => {
   const publicLink = await publishMarijinoKrstenje(page)
   const publicPath = publicLink.slice(publicLink.indexOf('/e/'))
 
@@ -82,9 +82,19 @@ test('organizer happy path: create event, assign table, publish, guest finds tab
   expect((await galleryTitle.boundingBox()).y).toBeLessThan((await searchTitle.boundingBox()).y)
   await page.getByLabel('Dodaj fotografije iz galerije').setInputFiles({ name: 'trenutak.png', mimeType: 'image/png', buffer: INVITE_PNG })
   await expect(page.getByRole('button', { name: 'Otvori fotografiju 1' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Obriši fotografiju 1' })).toBeVisible()
   await page.getByRole('button', { name: 'Otvori fotografiju 1' }).click()
   await expect(page.getByRole('dialog', { name: 'Pregled fotografije' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Obriši ovu fotografiju' })).toBeVisible()
   await page.getByRole('button', { name: 'Zatvori fotografiju' }).click()
+  await page.getByRole('button', { name: 'Obriši fotografiju 1' }).click()
+  const deletePhotoDialog = page.getByRole('dialog', { name: 'Obriši fotografiju?' })
+  await expect(deletePhotoDialog).toBeVisible()
+  await page.waitForTimeout(300)
+  await page.screenshot({ path: testInfo.outputPath('photo-delete-confirmation.png') })
+  await deletePhotoDialog.getByRole('button', { name: 'Potvrdi brisanje fotografije' }).click()
+  await expect(page.getByRole('button', { name: 'Otvori fotografiju 1' })).toHaveCount(0)
+  await expect(page.getByText('Prva fotografija čeka vas')).toBeVisible()
 
   await page.getByLabel('Upiši svoje ime').fill('Ivan Gorupić')
   await page.getByRole('button', { name: 'Pronađi moj stol' }).click()

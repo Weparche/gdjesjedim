@@ -1,6 +1,6 @@
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024
 const CORS_METHODS = 'GET, HEAD, POST, PATCH, DELETE, OPTIONS'
-const CORS_HEADERS = 'Authorization, Content-Type, X-File-Name'
+const CORS_HEADERS = 'Authorization, Content-Type, X-File-Name, X-Photo-Delete-Token'
 const DEFAULT_TABLE_POSITIONS = [
   { x: 28, y: 22 },
   { x: 72, y: 22 },
@@ -121,6 +121,11 @@ async function safeEqual(provided, expected) {
     crypto.subtle.digest('SHA-256', encoder.encode(expected ?? ''))
   ])
   return crypto.subtle.timingSafeEqual(providedHash, expectedHash)
+}
+
+async function sha256Hex(value) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value ?? ''))
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 function bearerToken(request) {
@@ -480,18 +485,37 @@ function streamFromBytes(bytes) {
 }
 
 async function handleGallery(request, env, url) {
-  const match = url.pathname.match(/^\/api\/events\/([^/]+)\/photos$/)
+  const match = url.pathname.match(/^\/api\/events\/([^/]+)\/photos(?:\/([^/]+))?$/)
   if (!match) return null
   const slug = decodeURIComponent(match[1])
+  const photoId = match[2] ? decodeURIComponent(match[2]) : null
   const event = await eventRowBySlug(env, slug)
   if (!event?.published) return error('Događaj nije pronađen.', 404)
 
-  if (request.method === 'GET') {
+  if (request.method === 'DELETE' && photoId) {
+    const row = await env.DB.prepare(
+      'SELECT id, object_key, thumb_key, delete_token_hash FROM photos WHERE id = ?1 AND event_id = ?2'
+    ).bind(photoId, event.id).first()
+    if (!row) return error('Fotografija nije pronađena.', 404)
+    if (!row.delete_token_hash) return error('Ovu fotografiju nije moguće obrisati s ovog uređaja.', 403)
+
+    const providedToken = request.headers.get('x-photo-delete-token') ?? ''
+    const providedHash = await sha256Hex(providedToken)
+    if (!(await safeEqual(providedHash, row.delete_token_hash))) {
+      return error('Ovu fotografiju može obrisati samo osoba koja ju je dodala.', 403)
+    }
+
+    await env.DB.prepare('DELETE FROM photos WHERE id = ?1 AND event_id = ?2').bind(photoId, event.id).run()
+    await env.PHOTOS.delete([row.object_key, row.thumb_key])
+    return new Response(null, { status: 204 })
+  }
+
+  if (request.method === 'GET' && !photoId) {
     const rows = await env.DB.prepare('SELECT * FROM photos WHERE event_id = ?1 ORDER BY created_at DESC, rowid DESC').bind(event.id).all()
     return json(rows.results.map(photoFromRow), 200, { 'Cache-Control': 'public, max-age=5, stale-while-revalidate=30' })
   }
 
-  if (request.method === 'POST') {
+  if (request.method === 'POST' && !photoId) {
     const length = Number(request.headers.get('content-length') ?? 0)
     if (length > MAX_IMAGE_BYTES) return error('Fotografija može imati najviše 20 MB.', 413)
     if (!request.headers.get('content-type')?.startsWith('image/')) return error('Odabrana datoteka nije fotografija.', 415)
@@ -509,6 +533,8 @@ async function handleGallery(request, env, url) {
     ])
 
     const id = crypto.randomUUID()
+    const deleteToken = `${crypto.randomUUID()}${crypto.randomUUID()}`
+    const deleteTokenHash = await sha256Hex(deleteToken)
     const objectKey = `events/${event.id}/${id}.webp`
     const thumbKey = `events/${event.id}/${id}-thumb.webp`
     const [mainObject] = await Promise.all([
@@ -521,16 +547,16 @@ async function handleGallery(request, env, url) {
 
     try {
       await env.DB.prepare(
-        `INSERT INTO photos (id, event_id, object_key, thumb_key, original_name, width, height, byte_size)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`
-      ).bind(id, event.id, objectKey, thumbKey, originalName || null, info.width, info.height, mainObject?.size ?? 0).run()
+        `INSERT INTO photos (id, event_id, object_key, thumb_key, original_name, width, height, byte_size, delete_token_hash)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`
+      ).bind(id, event.id, objectKey, thumbKey, originalName || null, info.width, info.height, mainObject?.size ?? 0, deleteTokenHash).run()
     } catch (databaseError) {
       await Promise.all([env.PHOTOS.delete(objectKey), env.PHOTOS.delete(thumbKey)])
       throw databaseError
     }
 
     const row = await env.DB.prepare('SELECT * FROM photos WHERE id = ?1').bind(id).first()
-    return json(photoFromRow(row), 201)
+    return json({ ...photoFromRow(row), deleteToken }, 201)
   }
 
   return error('Metoda nije podržana.', 405)

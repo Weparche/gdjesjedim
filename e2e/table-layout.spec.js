@@ -141,6 +141,18 @@ test('mobile map supports zoom controls and drag-to-pan', async ({ page }) => {
   const map = page.getByRole('region', { name: 'Mapa rasporeda stolova' })
 
   await expect(map).toHaveAttribute('data-zoom', '0.8')
+  const zoomControls = map.locator('[data-map-zoom-controls]')
+  const [minusBox, fitBox, plusBox, mapBox] = await Promise.all([
+    zoomControls.getByRole('button', { name: 'Smanji mapu' }).boundingBox(),
+    zoomControls.getByRole('button', { name: 'Prikaži cijelu mapu' }).boundingBox(),
+    zoomControls.getByRole('button', { name: 'Povećaj mapu' }).boundingBox(),
+    map.boundingBox()
+  ])
+  expect(Math.abs(minusBox.y - plusBox.y)).toBeLessThan(1)
+  expect(minusBox.x).toBeLessThan(fitBox.x)
+  expect(fitBox.x).toBeLessThan(plusBox.x)
+  expect(minusBox.y - mapBox.y).toBeLessThanOrEqual(13)
+  expect(mapBox.x + mapBox.width - (plusBox.x + plusBox.width)).toBeLessThanOrEqual(13)
   await page.getByRole('button', { name: 'Povećaj mapu' }).click()
   await expect(map).toHaveAttribute('data-zoom', '1')
   await page.getByRole('button', { name: 'Prikaži cijelu mapu' }).click()

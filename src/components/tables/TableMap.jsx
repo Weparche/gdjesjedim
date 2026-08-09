@@ -369,24 +369,7 @@ export default function TableMap({
       </div>
 
       {!focusedTable && (
-        <div data-map-interactive className="absolute bottom-3 right-3 z-30 flex flex-col items-center overflow-hidden rounded-md bg-white/95 shadow-card">
-          <button
-            type="button"
-            onClick={() => changeZoom(ZOOM_STEP)}
-            disabled={view.zoom >= MAX_ZOOM}
-            className="flex h-11 w-11 items-center justify-center text-charcoal transition-colors hover:bg-cream disabled:text-charcoal-soft/40"
-            aria-label="Povećaj mapu"
-          >
-            <Plus size={17} strokeWidth={1.5} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={fitMap}
-            className="flex h-11 w-11 items-center justify-center border-y border-cream font-ui text-[10px] font-semibold text-charcoal transition-colors hover:bg-cream"
-            aria-label="Prikaži cijelu mapu"
-          >
-            {Math.round(view.zoom * 100)}%
-          </button>
+        <div data-map-interactive data-map-zoom-controls className="absolute right-3 top-3 z-30 flex items-center overflow-hidden rounded-md bg-white/95 shadow-card">
           <button
             type="button"
             onClick={() => changeZoom(-ZOOM_STEP)}
@@ -395,6 +378,23 @@ export default function TableMap({
             aria-label="Smanji mapu"
           >
             <Minus size={17} strokeWidth={1.5} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={fitMap}
+            className="flex h-11 min-w-12 items-center justify-center border-x border-cream px-1 font-ui text-[10px] font-semibold text-charcoal transition-colors hover:bg-cream"
+            aria-label="Prikaži cijelu mapu"
+          >
+            {Math.round(view.zoom * 100)}%
+          </button>
+          <button
+            type="button"
+            onClick={() => changeZoom(ZOOM_STEP)}
+            disabled={view.zoom >= MAX_ZOOM}
+            className="flex h-11 w-11 items-center justify-center text-charcoal transition-colors hover:bg-cream disabled:text-charcoal-soft/40"
+            aria-label="Povećaj mapu"
+          >
+            <Plus size={17} strokeWidth={1.5} aria-hidden="true" />
           </button>
         </div>
       )}

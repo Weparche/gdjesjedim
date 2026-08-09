@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Camera, ChevronLeft, ChevronRight, ImagePlus, Images, LoaderCircle, X } from 'lucide-react'
+import { Camera, ChevronLeft, ChevronRight, ImagePlus, Images, LoaderCircle, Trash2, X } from 'lucide-react'
 import galleryRepository from '../../data/galleryRepository.js'
+import BottomSheet from '../common/BottomSheet.jsx'
 
 function GalleryButton({ icon: Icon, children, onClick, disabled }) {
   return (
@@ -16,7 +17,7 @@ function GalleryButton({ icon: Icon, children, onClick, disabled }) {
   )
 }
 
-function PhotoViewer({ photos, index, onIndex, onClose }) {
+function PhotoViewer({ photos, index, onIndex, onClose, onDelete }) {
   const photo = photos[index]
 
   useEffect(() => {
@@ -33,9 +34,16 @@ function PhotoViewer({ photos, index, onIndex, onClose }) {
     <div className="fixed inset-0 z-50 flex flex-col bg-charcoal/95" role="dialog" aria-modal="true" aria-label="Pregled fotografije">
       <div className="flex min-h-16 items-center justify-between px-3 text-white">
         <span className="px-2 font-ui text-sm tabular-nums">{index + 1} / {photos.length}</span>
-        <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-pill bg-white/10" aria-label="Zatvori fotografiju">
-          <X size={24} aria-hidden="true" />
-        </button>
+        <div className="flex items-center gap-1">
+          {photo.canDelete && (
+            <button type="button" onClick={() => onDelete(photo.id)} className="flex h-11 w-11 items-center justify-center rounded-pill bg-white/10 text-white" aria-label="Obriši ovu fotografiju">
+              <Trash2 size={20} strokeWidth={1.7} aria-hidden="true" />
+            </button>
+          )}
+          <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-pill bg-white/10" aria-label="Zatvori fotografiju">
+            <X size={24} aria-hidden="true" />
+          </button>
+        </div>
       </div>
       <div className="relative flex min-h-0 flex-1 items-center justify-center px-3 pb-6">
         <img src={photo.url} alt={`Fotografija ${index + 1}`} className="max-h-full max-w-full object-contain" />
@@ -60,6 +68,8 @@ export default function EventGallery({ slug }) {
   const [uploading, setUploading] = useState(0)
   const [error, setError] = useState('')
   const [viewerIndex, setViewerIndex] = useState(null)
+  const [deleteTargetId, setDeleteTargetId] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
   const cameraInput = useRef(null)
   const galleryInput = useRef(null)
 
@@ -104,6 +114,37 @@ export default function EventGallery({ slug }) {
     if (galleryInput.current) galleryInput.current.value = ''
   }
 
+  function requestDelete(photoId) {
+    setError('')
+    setDeleteTargetId(photoId)
+  }
+
+  async function confirmDelete() {
+    const photo = photos.find((item) => item.id === deleteTargetId)
+    if (!photo) return
+    const deletedIndex = photos.findIndex((item) => item.id === photo.id)
+    setDeletingId(photo.id)
+    setError('')
+    try {
+      await galleryRepository.deletePhoto(slug, photo.id)
+      setPhotos((current) => current.filter((item) => item.id !== photo.id))
+      setViewerIndex((current) => {
+        if (current == null) return null
+        if (current === deletedIndex) return null
+        return current > deletedIndex ? current - 1 : current
+      })
+      setDeleteTargetId(null)
+      if (photo.url?.startsWith('blob:')) URL.revokeObjectURL(photo.url)
+    } catch (caught) {
+      setError(caught.message || 'Fotografiju nije moguće obrisati. Pokušaj ponovno.')
+      setDeleteTargetId(null)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const deleteTarget = photos.find((photo) => photo.id === deleteTargetId)
+
   return (
     <section aria-labelledby="gallery-title">
       <div className="flex items-end justify-between gap-3">
@@ -138,15 +179,29 @@ export default function EventGallery({ slug }) {
       ) : photos.length > 0 ? (
         <div className="gallery-grid mt-3 overflow-hidden rounded-lg bg-cream" aria-label="Fotografije s događaja">
           {photos.map((photo, index) => (
-            <button
+            <div
               key={photo.id}
-              type="button"
-              onClick={() => setViewerIndex(index)}
               className={`gallery-photo relative min-h-20 overflow-hidden bg-cream ${index === 0 ? 'gallery-photo-featured' : ''}`}
-              aria-label={`Otvori fotografiju ${index + 1}`}
             >
-              <img src={photo.thumbnailUrl} alt="" loading={index > 2 ? 'lazy' : 'eager'} className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.03]" />
-            </button>
+              <button
+                type="button"
+                onClick={() => setViewerIndex(index)}
+                className="h-full w-full"
+                aria-label={`Otvori fotografiju ${index + 1}`}
+              >
+                <img src={photo.thumbnailUrl} alt="" loading={index > 2 ? 'lazy' : 'eager'} className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.03]" />
+              </button>
+              {photo.canDelete && (
+                <button
+                  type="button"
+                  onClick={() => requestDelete(photo.id)}
+                  className="absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center rounded-pill bg-charcoal/75 text-white shadow-card transition-colors hover:bg-terracotta"
+                  aria-label={`Obriši fotografiju ${index + 1}`}
+                >
+                  <Trash2 size={18} strokeWidth={1.8} aria-hidden="true" />
+                </button>
+              )}
+            </div>
           ))}
         </div>
       ) : (
@@ -158,8 +213,44 @@ export default function EventGallery({ slug }) {
       )}
 
       {viewerIndex !== null && photos[viewerIndex] && (
-        <PhotoViewer photos={photos} index={viewerIndex} onIndex={setViewerIndex} onClose={() => setViewerIndex(null)} />
+        <PhotoViewer photos={photos} index={viewerIndex} onIndex={setViewerIndex} onClose={() => setViewerIndex(null)} onDelete={requestDelete} />
       )}
+
+      <BottomSheet
+        open={deleteTargetId != null}
+        onClose={() => {
+          if (!deletingId) setDeleteTargetId(null)
+        }}
+        title="Obriši fotografiju?"
+        subtitle={deleteTarget?.originalName}
+      >
+        {deleteTarget && (
+          <img src={deleteTarget.thumbnailUrl} alt="Fotografija odabrana za brisanje" className="h-32 w-full rounded-md object-cover" />
+        )}
+        <p className="mt-3 font-ui text-sm leading-relaxed text-charcoal-soft">
+          Fotografija će se trajno ukloniti iz galerije događaja. Ovu radnju nije moguće poništiti.
+        </p>
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setDeleteTargetId(null)}
+            disabled={Boolean(deletingId)}
+            className="min-h-[52px] flex-1 rounded-md font-ui text-sm font-semibold text-charcoal-soft transition-colors hover:bg-cream disabled:opacity-50"
+          >
+            Odustani
+          </button>
+          <button
+            type="button"
+            onClick={confirmDelete}
+            disabled={Boolean(deletingId)}
+            className="inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-md bg-terracotta px-4 font-ui text-sm font-semibold text-white shadow-card transition-colors hover:bg-charcoal disabled:opacity-50"
+            aria-label="Potvrdi brisanje fotografije"
+          >
+            {deletingId ? <LoaderCircle size={17} className="animate-spin" aria-hidden="true" /> : <Trash2 size={17} aria-hidden="true" />}
+            {deletingId ? 'Brišem…' : 'Obriši'}
+          </button>
+        </div>
+      </BottomSheet>
     </section>
   )
 }

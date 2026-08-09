@@ -15,7 +15,7 @@ Topla editorial proslava: papirnata ivory podloga, cream paneli, DM Serif Displa
 - Mapa je relativno pozicionirani cream/paper canvas visine oko 432px, bez horizontalnog pomicanja.
 - Pregledno stanje koristi interaktivne čvorove od 120×120px i optički povećane imagegen ilustracije od 132×132px, tako da uvučene stolice ostaju neposredno uz kartice imena bez širenja drag područja. Početni fit zoom je 80%. Okrugli i četvrtasti stol imaju svečani ivory-damask stolnjak, champagne-zlatni rub i osam duboko uvučenih stolica; naziv i popunjenost ostaju čitljivi na čistoj sredini stola.
 - Kartice gostiju koriste dinamički kružni raspored; za devet gostiju jedan prsten ima radijus oko 92px, kartice do 58px i prijelom imena u najviše dva retka. Kartice ostaju neposredno uz vanjski rub uvučenih stolica.
-- Prazna površina mape može se pomicati povlačenjem. Standardni vertikalni blok dolje desno (`+`, postotak/reset, `−`) mijenja zoom u rasponu 70–180%; pinch i kotačić rade uz kontrole, a reset koristi 80% za pregled cijele mape.
+- Prazna površina mape može se pomicati povlačenjem. Horizontalni blok gore desno (`−`, postotak/reset, `+`) mijenja zoom u rasponu 70–180%; pinch i kotačić rade uz kontrole, a reset koristi 80% za pregled cijele mape.
 - Dodir na stol otvara fokusirani sloj: stol je centriran, a numerirane kartice gostiju raspoređene su lijevo i desno. Za više od 10 gostiju koristi se pomični dvokolonski popis.
 - Raspored stolova i popis gostiju su na jednom ekranu. Dodavanje gostiju otvara bottom-sheet popup, a neraspoređeni gosti ostaju kao velike draggable chips ispod mape.
 - Pregled dodjele grupira goste po stolovima; numeracija za svaki stol ponovno kreće od 1, a ispod je ukupan broj gostiju.
@@ -30,6 +30,7 @@ Topla editorial proslava: papirnata ivory podloga, cream paneli, DM Serif Displa
 ## Public event
 - Javni link prvo prikazuje naslov, datum, pretragu i cijelu mapu.
 - Svi stolovi su odmah vidljivi u preglednom stanju. Dodir ili pretraga otvaraju imena jednog stola, a zatvaranje fokusa vraća cijelu mapu.
+- Fotografije su javno vidljive, ali koš za brisanje vidi samo browser koji je fotografiju dodao. Worker vraća vlasnički token samo pri uploadu, u D1 sprema samo njegov SHA-256 otisak, a potvrđeno brisanje uklanja zapis i obje WebP varijante iz R2.
 
 ## Surfaces and motion
 - Koristiti postojeće radius/shadow tokene; kartice samo za jasne grupe i stanja.
