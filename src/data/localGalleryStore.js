@@ -31,7 +31,7 @@ function transaction(mode, action) {
 
 function publicPhoto(record) {
   const url = URL.createObjectURL(record.blob)
-  return { id: record.id, originalName: record.originalName, width: record.width, height: record.height, createdAt: record.createdAt, url, thumbnailUrl: url }
+  return { id: record.id, originalName: record.originalName, width: record.width, height: record.height, createdAt: record.createdAt, url, thumbnailUrl: url, canDelete: true }
 }
 
 export async function listLocalPhotos(eventSlug) {
@@ -57,4 +57,25 @@ export async function addLocalPhoto(eventSlug, file, dimensions = {}) {
   }
   await transaction('readwrite', (store) => store.put(record))
   return publicPhoto(record)
+}
+
+export async function deleteLocalPhoto(eventSlug, photoId) {
+  const database = await openDatabase()
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction(STORE_NAME, 'readwrite')
+    const store = tx.objectStore(STORE_NAME)
+    const request = store.get(photoId)
+    request.onsuccess = () => {
+      if (request.result?.eventSlug === eventSlug) store.delete(photoId)
+    }
+    request.onerror = () => reject(request.error)
+    tx.oncomplete = () => {
+      database.close()
+      resolve()
+    }
+    tx.onerror = () => {
+      database.close()
+      reject(tx.error)
+    }
+  })
 }

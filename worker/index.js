@@ -1,4 +1,6 @@
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024
+const CORS_METHODS = 'GET, HEAD, POST, PATCH, DELETE, OPTIONS'
+const CORS_HEADERS = 'Authorization, Content-Type, X-File-Name, X-Photo-Delete-Token'
 const DEFAULT_TABLE_POSITIONS = [
   { x: 28, y: 22 },
   { x: 72, y: 22 },
@@ -7,6 +9,38 @@ const DEFAULT_TABLE_POSITIONS = [
   { x: 28, y: 78 },
   { x: 72, y: 78 }
 ]
+
+function allowedCorsOrigin(request) {
+  const origin = request.headers.get('Origin')
+  if (!origin) return null
+  try {
+    const { hostname, protocol } = new URL(origin)
+    const isPagesApp = protocol === 'https:' && (
+      hostname === 'gdjesjedim.pages.dev' || hostname.endsWith('.gdjesjedim.pages.dev')
+    )
+    const isLocal = protocol === 'http:' && (hostname === 'localhost' || hostname === '127.0.0.1')
+    return isPagesApp || isLocal ? origin : null
+  } catch {
+    return null
+  }
+}
+
+function corsHeaders(origin) {
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': CORS_METHODS,
+    'Access-Control-Allow-Headers': CORS_HEADERS,
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin'
+  }
+}
+
+function withCors(response, origin) {
+  if (!origin) return response
+  const headers = new Headers(response.headers)
+  for (const [name, value] of Object.entries(corsHeaders(origin))) headers.set(name, value)
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers })
+}
 
 function json(data, status = 200, headers = {}) {
   return Response.json(data, {
@@ -87,6 +121,11 @@ async function safeEqual(provided, expected) {
     crypto.subtle.digest('SHA-256', encoder.encode(expected ?? ''))
   ])
   return crypto.subtle.timingSafeEqual(providedHash, expectedHash)
+}
+
+async function sha256Hex(value) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value ?? ''))
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 function bearerToken(request) {
@@ -288,14 +327,56 @@ async function handleGuests(request, env, url) {
       if (!(await requireEventAdmin(request, env, eventId))) return error('Nedopušten pristup.', 401)
       const body = await boundedJson(request)
       const names = Array.isArray(body.names) ? body.names.filter((name) => typeof name === 'string' && name.trim()) : []
-      const created = names.map((name) => ({ id: crypto.randomUUID(), eventId, name: name.trim(), normalizedName: normalizeName(name), tableId: undefined }))
+      const tableRows = body.tableId
+        ? (await env.DB.prepare(
+          `SELECT tables.id, tables.capacity, COUNT(guests.id) AS occupied
+           FROM tables LEFT JOIN guests ON guests.table_id = tables.id
+           WHERE tables.event_id = ?1 GROUP BY tables.id ORDER BY tables.rowid`
+        ).bind(eventId).all()).results
+        : []
+      const preferredIndex = tableRows.findIndex((table) => table.id === body.tableId)
+      if (body.tableId && preferredIndex < 0) return error('Odabrani stol nije valjan.', 400)
+      const orderedTables = preferredIndex < 0
+        ? []
+        : [...tableRows.slice(preferredIndex), ...tableRows.slice(0, preferredIndex)]
+      const occupied = new Map(tableRows.map((table) => [table.id, Number(table.occupied ?? 0)]))
+      const created = names.map((name) => {
+        const target = orderedTables.find((table) => (occupied.get(table.id) ?? 0) < Number(table.capacity ?? 0))
+        if (target) occupied.set(target.id, (occupied.get(target.id) ?? 0) + 1)
+        return {
+          id: crypto.randomUUID(), eventId, name: name.trim(), normalizedName: normalizeName(name), tableId: target?.id
+        }
+      })
       if (created.length) {
         await env.DB.batch(created.map((guest) => env.DB.prepare(
-          'INSERT INTO guests (id, event_id, name, normalized_name) VALUES (?1, ?2, ?3, ?4)'
-        ).bind(guest.id, guest.eventId, guest.name, guest.normalizedName)))
+          'INSERT INTO guests (id, event_id, name, normalized_name, table_id) VALUES (?1, ?2, ?3, ?4, ?5)'
+        ).bind(guest.id, guest.eventId, guest.name, guest.normalizedName, guest.tableId ?? null)))
       }
       return json(created, 201)
     }
+  }
+
+  const swapMatch = url.pathname.match(/^\/api\/guests\/([^/]+)\/swap$/)
+  if (swapMatch && request.method === 'POST') {
+    const id = decodeURIComponent(swapMatch[1])
+    if (!(await requireGuestAdmin(request, env, id))) return error('Nedopušten pristup.', 401)
+    const body = await boundedJson(request)
+    const [guest, otherGuest] = await Promise.all([
+      env.DB.prepare('SELECT * FROM guests WHERE id = ?1').bind(id).first(),
+      env.DB.prepare('SELECT * FROM guests WHERE id = ?1').bind(body.otherGuestId ?? '').first()
+    ])
+    if (!guest || !otherGuest || guest.id === otherGuest.id || guest.event_id !== otherGuest.event_id) {
+      return error('Gosti za zamjenu nisu valjani.', 400)
+    }
+    await env.DB.batch([
+      env.DB.prepare('UPDATE guests SET table_id = ?1 WHERE id = ?2').bind(otherGuest.table_id ?? null, guest.id),
+      env.DB.prepare('UPDATE guests SET table_id = ?1 WHERE id = ?2').bind(guest.table_id ?? null, otherGuest.id)
+    ])
+    const [updatedGuest, updatedOtherGuest] = await Promise.all([
+      env.DB.prepare('SELECT * FROM guests WHERE id = ?1').bind(guest.id).first(),
+      env.DB.prepare('SELECT * FROM guests WHERE id = ?1').bind(otherGuest.id).first()
+    ])
+    return json({ guest: guestFromRow(updatedGuest), otherGuest: guestFromRow(updatedOtherGuest) })
   }
 
   const assignMatch = url.pathname.match(/^\/api\/guests\/([^/]+)\/assign$/)
@@ -306,8 +387,13 @@ async function handleGuests(request, env, url) {
     if (!guest) return error('Gost nije pronađen.', 404)
     const body = await boundedJson(request)
     if (body.tableId) {
-      const table = await env.DB.prepare('SELECT event_id FROM tables WHERE id = ?1').bind(body.tableId).first()
+      const table = await env.DB.prepare(
+        'SELECT tables.event_id, tables.capacity, COUNT(guests.id) AS occupied FROM tables LEFT JOIN guests ON guests.table_id = tables.id WHERE tables.id = ?1 GROUP BY tables.id'
+      ).bind(body.tableId).first()
       if (!table || table.event_id !== guest.event_id) return error('Stol nije valjan.', 400)
+      if (guest.table_id !== body.tableId && Number(table.occupied ?? 0) >= Number(table.capacity ?? 0)) {
+        return error('Stol je pun. Odaberi gosta za zamjenu.', 409)
+      }
     }
     await env.DB.prepare('UPDATE guests SET table_id = ?1 WHERE id = ?2').bind(body.tableId ?? null, id).run()
     return json(guestFromRow(await env.DB.prepare('SELECT * FROM guests WHERE id = ?1').bind(id).first()))
@@ -399,18 +485,41 @@ function streamFromBytes(bytes) {
 }
 
 async function handleGallery(request, env, url) {
-  const match = url.pathname.match(/^\/api\/events\/([^/]+)\/photos$/)
+  const match = url.pathname.match(/^\/api\/events\/([^/]+)\/photos(?:\/([^/]+))?$/)
   if (!match) return null
   const slug = decodeURIComponent(match[1])
+  const photoId = match[2] ? decodeURIComponent(match[2]) : null
   const event = await eventRowBySlug(env, slug)
   if (!event?.published) return error('Događaj nije pronađen.', 404)
 
-  if (request.method === 'GET') {
+  if (request.method === 'DELETE' && photoId) {
+    const row = await env.DB.prepare(
+      'SELECT id, object_key, thumb_key, delete_token_hash FROM photos WHERE id = ?1 AND event_id = ?2'
+    ).bind(photoId, event.id).first()
+    if (!row) return error('Fotografija nije pronađena.', 404)
+    const providedAdminToken = bearerToken(request)
+    const adminAuthorized = providedAdminToken
+      ? await safeEqual(providedAdminToken, event.admin_token)
+      : false
+    const providedToken = request.headers.get('x-photo-delete-token') ?? ''
+    const ownerAuthorized = row.delete_token_hash && providedToken
+      ? await safeEqual(await sha256Hex(providedToken), row.delete_token_hash)
+      : false
+    if (!adminAuthorized && !ownerAuthorized) {
+      return error('Ovu fotografiju može obrisati samo osoba koja ju je dodala ili admin događaja.', 403)
+    }
+
+    await env.DB.prepare('DELETE FROM photos WHERE id = ?1 AND event_id = ?2').bind(photoId, event.id).run()
+    await env.PHOTOS.delete([row.object_key, row.thumb_key])
+    return new Response(null, { status: 204 })
+  }
+
+  if (request.method === 'GET' && !photoId) {
     const rows = await env.DB.prepare('SELECT * FROM photos WHERE event_id = ?1 ORDER BY created_at DESC, rowid DESC').bind(event.id).all()
     return json(rows.results.map(photoFromRow), 200, { 'Cache-Control': 'public, max-age=5, stale-while-revalidate=30' })
   }
 
-  if (request.method === 'POST') {
+  if (request.method === 'POST' && !photoId) {
     const length = Number(request.headers.get('content-length') ?? 0)
     if (length > MAX_IMAGE_BYTES) return error('Fotografija može imati najviše 20 MB.', 413)
     if (!request.headers.get('content-type')?.startsWith('image/')) return error('Odabrana datoteka nije fotografija.', 415)
@@ -428,6 +537,8 @@ async function handleGallery(request, env, url) {
     ])
 
     const id = crypto.randomUUID()
+    const deleteToken = `${crypto.randomUUID()}${crypto.randomUUID()}`
+    const deleteTokenHash = await sha256Hex(deleteToken)
     const objectKey = `events/${event.id}/${id}.webp`
     const thumbKey = `events/${event.id}/${id}-thumb.webp`
     const [mainObject] = await Promise.all([
@@ -440,16 +551,16 @@ async function handleGallery(request, env, url) {
 
     try {
       await env.DB.prepare(
-        `INSERT INTO photos (id, event_id, object_key, thumb_key, original_name, width, height, byte_size)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`
-      ).bind(id, event.id, objectKey, thumbKey, originalName || null, info.width, info.height, mainObject?.size ?? 0).run()
+        `INSERT INTO photos (id, event_id, object_key, thumb_key, original_name, width, height, byte_size, delete_token_hash)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`
+      ).bind(id, event.id, objectKey, thumbKey, originalName || null, info.width, info.height, mainObject?.size ?? 0, deleteTokenHash).run()
     } catch (databaseError) {
       await Promise.all([env.PHOTOS.delete(objectKey), env.PHOTOS.delete(thumbKey)])
       throw databaseError
     }
 
     const row = await env.DB.prepare('SELECT * FROM photos WHERE id = ?1').bind(id).first()
-    return json(photoFromRow(row), 201)
+    return json({ ...photoFromRow(row), deleteToken }, 201)
   }
 
   return error('Metoda nije podržana.', 405)
@@ -487,12 +598,18 @@ async function routeRequest(request, env) {
 
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url)
+    const corsOrigin = allowedCorsOrigin(request)
+    if (request.method === 'OPTIONS' && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/media/'))) {
+      if (!corsOrigin) return error('Origin nije dopušten.', 403)
+      return new Response(null, { status: 204, headers: corsHeaders(corsOrigin) })
+    }
     try {
-      return await routeRequest(request, env)
+      return withCors(await routeRequest(request, env), corsOrigin)
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : String(caught)
-      console.error(JSON.stringify({ message: 'request_failed', path: new URL(request.url).pathname, error: message }))
-      return error('Dogodila se neočekivana greška.', 500)
+      console.error(JSON.stringify({ message: 'request_failed', path: url.pathname, error: message }))
+      return withCors(error('Dogodila se neočekivana greška.', 500), corsOrigin)
     }
   }
 }

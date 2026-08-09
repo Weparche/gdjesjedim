@@ -4,9 +4,7 @@ import { useRef, useState } from 'react'
 import FocusedTableView from './FocusedTableView.jsx'
 import TableCard from './TableCard.jsx'
 
-const TABLE_RADIUS = 60
-const MAP_GUTTER = 10
-const MAP_LABEL_HEIGHT = 42
+const TABLE_POSITION_GUTTER = 6
 const MIN_ZOOM = 0.7
 const MAX_ZOOM = 1.8
 const ZOOM_STEP = 0.2
@@ -40,7 +38,7 @@ function guestOffset(index, total) {
 
 function OverviewGuestCard({ guest, table, highlighted, dragging, readOnly, onPointerDown, onClick, offset }) {
   const visual = (
-    <span className={`block max-w-[58px] break-words rounded-pill border px-2 py-1 text-center font-ui text-[9px] font-semibold leading-[1.1] shadow-card ${
+    <span className={`line-clamp-2 max-w-[58px] rounded-pill border px-2 py-1 text-center font-ui text-[9px] font-semibold leading-[1.1] shadow-card [overflow-wrap:normal] [word-break:normal] ${
       dragging
         ? 'border-gold bg-cream text-charcoal shadow-elevated'
         : highlighted
@@ -159,27 +157,29 @@ export default function TableMap({
     const screenY = event.clientY - rect.top
     const canvasX = rect.width / 2 + (screenX - rect.width / 2 - view.x) / view.zoom
     const canvasY = rect.height / 2 + (screenY - rect.height / 2 - view.y) / view.zoom
-    const horizontalInset = ((TABLE_RADIUS + MAP_GUTTER) / rect.width) * 100
-    const topInset = ((TABLE_RADIUS + MAP_LABEL_HEIGHT) / rect.height) * 100
-    const bottomInset = ((TABLE_RADIUS + MAP_GUTTER) / rect.height) * 100
-
     return {
-      x: Math.max(horizontalInset, Math.min(100 - horizontalInset, (canvasX / rect.width) * 100)),
-      y: Math.max(topInset, Math.min(100 - bottomInset, (canvasY / rect.height) * 100))
+      x: Math.max(TABLE_POSITION_GUTTER, Math.min(100 - TABLE_POSITION_GUTTER, (canvasX / rect.width) * 100)),
+      y: Math.max(TABLE_POSITION_GUTTER, Math.min(100 - TABLE_POSITION_GUTTER, (canvasY / rect.height) * 100))
     }
   }
 
   function startPanning(event) {
     const pointers = pointerCacheRef.current
     const alreadyTracking = pointers.size > 0
+    const isTouchPointer = event.pointerType === 'touch'
     if (
       focusedTable
       || event.button !== 0
       || (!alreadyTracking && event.target.closest?.('[data-map-interactive], [data-table-drop-id]'))
     ) return
 
-    event.preventDefault()
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
+    // One finger belongs to normal page scrolling. Touch panning and pinching
+    // begin only after the second finger reaches the map.
+    if (isTouchPointer && pointers.size === 1) return
+
+    event.preventDefault()
     try {
       event.currentTarget.setPointerCapture?.(event.pointerId)
     } catch {
@@ -304,7 +304,7 @@ export default function TableMap({
       data-pan-x={Math.round(view.x)}
       data-pan-y={Math.round(view.y)}
       className={`relative min-h-[432px] overflow-hidden rounded-lg border border-cream bg-cover bg-center shadow-inner ${panGesture ? 'cursor-grabbing' : 'cursor-grab'}`}
-      style={{ backgroundImage: "url('/assets/seating-paper-bg.png')", touchAction: focusedTable ? 'auto' : 'none' }}
+      style={{ backgroundImage: "url('/assets/seating-paper-bg.png')", touchAction: focusedTable ? 'auto' : 'pan-y' }}
       onPointerDown={startPanning}
       onPointerMove={moveInteraction}
       onPointerUp={finishInteraction}
@@ -330,6 +330,8 @@ export default function TableMap({
           return (
             <div
               key={table.id}
+              data-table-position-x={Number(activePosition.x).toFixed(1)}
+              data-table-position-y={Number(activePosition.y).toFixed(1)}
               className={`absolute transition-opacity ${draggingTable?.id === table.id ? 'z-20' : 'z-0'}`}
               style={{ left: `${activePosition.x}%`, top: `${activePosition.y}%` }}
             >
@@ -367,24 +369,7 @@ export default function TableMap({
       </div>
 
       {!focusedTable && (
-        <div data-map-interactive className="absolute bottom-3 right-3 z-30 flex flex-col items-center overflow-hidden rounded-md bg-white/95 shadow-card">
-          <button
-            type="button"
-            onClick={() => changeZoom(ZOOM_STEP)}
-            disabled={view.zoom >= MAX_ZOOM}
-            className="flex h-11 w-11 items-center justify-center text-charcoal transition-colors hover:bg-cream disabled:text-charcoal-soft/40"
-            aria-label="Povećaj mapu"
-          >
-            <Plus size={17} strokeWidth={1.5} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={fitMap}
-            className="flex h-11 w-11 items-center justify-center border-y border-cream font-ui text-[10px] font-semibold text-charcoal transition-colors hover:bg-cream"
-            aria-label="Prikaži cijelu mapu"
-          >
-            {Math.round(view.zoom * 100)}%
-          </button>
+        <div data-map-interactive data-map-zoom-controls className="absolute right-3 top-3 z-30 flex items-center overflow-hidden rounded-md bg-white/95 shadow-card">
           <button
             type="button"
             onClick={() => changeZoom(-ZOOM_STEP)}
@@ -393,6 +378,23 @@ export default function TableMap({
             aria-label="Smanji mapu"
           >
             <Minus size={17} strokeWidth={1.5} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={fitMap}
+            className="flex h-11 min-w-12 items-center justify-center border-x border-cream px-1 font-ui text-[10px] font-semibold text-charcoal transition-colors hover:bg-cream"
+            aria-label="Prikaži cijelu mapu"
+          >
+            {Math.round(view.zoom * 100)}%
+          </button>
+          <button
+            type="button"
+            onClick={() => changeZoom(ZOOM_STEP)}
+            disabled={view.zoom >= MAX_ZOOM}
+            className="flex h-11 w-11 items-center justify-center text-charcoal transition-colors hover:bg-cream disabled:text-charcoal-soft/40"
+            aria-label="Povećaj mapu"
+          >
+            <Plus size={17} strokeWidth={1.5} aria-hidden="true" />
           </button>
         </div>
       )}

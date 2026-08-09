@@ -1,3 +1,5 @@
+import { backendUrl } from './backendUrl.js'
+
 const TOKEN_KEY = 'gdjesjedim:admin-tokens'
 const ACTIVE_TOKEN_KEY = 'gdjesjedim:active-admin-token'
 
@@ -34,7 +36,7 @@ export function createApiRepository(storage = window.localStorage) {
     }
     const token = eventId ? tokenFor(eventId) : null
     if (token) headers.set('Authorization', `Bearer ${token}`)
-    const response = await fetch(path, { ...options, headers })
+    const response = await fetch(backendUrl(path), { ...options, headers })
     if (response.status === 204) return undefined
     const payload = await response.json().catch(() => null)
     if (!response.ok) throw new Error(payload?.error ?? 'Zahtjev nije uspio.')
@@ -74,9 +76,9 @@ export function createApiRepository(storage = window.localStorage) {
       return table
     },
     removeTable: (id) => request(`/api/tables/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${findAnyToken()}` } }),
-    addGuests(eventId, names) {
+    addGuests(eventId, names, tableId) {
       activateToken(eventId)
-      return request(`/api/events/${encodeURIComponent(eventId)}/guests`, { method: 'POST', body: JSON.stringify({ names }) }, eventId)
+      return request(`/api/events/${encodeURIComponent(eventId)}/guests`, { method: 'POST', body: JSON.stringify({ names, tableId }) }, eventId)
     },
     getGuests(eventId) {
       activateToken(eventId)
@@ -85,6 +87,7 @@ export function createApiRepository(storage = window.localStorage) {
     updateGuest: (id, patch) => request(`/api/guests/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch), headers: { Authorization: `Bearer ${findAnyToken()}` } }),
     removeGuest: (id) => request(`/api/guests/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${findAnyToken()}` } }),
     assignGuestToTable: (guestId, tableId) => request(`/api/guests/${encodeURIComponent(guestId)}/assign`, { method: 'POST', body: JSON.stringify({ tableId }), headers: { Authorization: `Bearer ${findAnyToken()}` } }),
+    swapGuests: (guestId, otherGuestId) => request(`/api/guests/${encodeURIComponent(guestId)}/swap`, { method: 'POST', body: JSON.stringify({ otherGuestId }), headers: { Authorization: `Bearer ${findAnyToken()}` } }),
     publishEvent: (id) => request(`/api/events/${encodeURIComponent(id)}/publish`, { method: 'POST' }, id),
     searchGuest: (slug, query) => request(`/api/public/${encodeURIComponent(slug)}/search?q=${encodeURIComponent(query)}`),
     getPublishedLayout: (slug) => request(`/api/public/${encodeURIComponent(slug)}/layout`).catch((caught) => {

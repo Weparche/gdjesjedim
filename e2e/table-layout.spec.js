@@ -50,6 +50,7 @@ test('organizer edits a table and assigns a guest on the map', async ({ page }) 
   await expect(tables).toHaveCount(2)
   await expect(tables.nth(0)).toHaveCSS('width', '120px')
   await expect(tables.nth(1)).toHaveCSS('width', '120px')
+  await expect(tables.nth(0).locator(':scope > span').last()).toHaveCSS('width', '132px')
   await tables.nth(0).click()
   await expect(page.getByRole('region', { name: 'Detalji za Stol 1' })).toBeVisible()
   await page.getByRole('button', { name: 'Uredi stol' }).click()
@@ -59,7 +60,7 @@ test('organizer edits a table and assigns a guest on the map', async ({ page }) 
   await dialog.getByRole('button', { name: 'Četvrtasti' }).click()
   await dialog.getByRole('button', { name: 'Zatvori' }).click()
 
-  await page.getByRole('button', { name: 'Ivan Gorupić' }).click()
+  await page.getByRole('button', { name: 'Ivan Gorupić', exact: true }).click()
   await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 1').click()
 
   await expect(page.getByRole('button', { name: '1. Ivan Gorupić, Stol 1' })).toBeVisible()
@@ -68,11 +69,90 @@ test('organizer edits a table and assigns a guest on the map', async ({ page }) 
   await expect(page.locator('[data-overview-guest-id]').filter({ hasText: 'Ivan Gorupić' })).toBeVisible()
 })
 
+test('assignment review moves guests by tap and swaps seats at a full table', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await openTables(page)
+  const tables = page.locator('[data-table-drop-id]')
+  await expect(tables).toHaveCount(2)
+
+  for (let index = 0; index < 2; index += 1) {
+    await tables.nth(index).click()
+    await page.getByRole('button', { name: 'Uredi stol' }).click()
+    const editor = page.getByRole('dialog', { name: 'Uredi stol' })
+    await editor.getByLabel('Broj mjesta').fill('1')
+    await editor.getByRole('button', { name: 'Zatvori' }).click()
+    await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
+  }
+
+  await page.getByRole('button', { name: 'Promijeni stol za Ivan Gorupić' }).click()
+  await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 1', { exact: true }).click()
+  await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
+
+  await page.getByRole('button', { name: 'Promijeni stol za Ana Gorupić' }).click()
+  await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 2', { exact: true }).click()
+  await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
+
+  await page.getByRole('button', { name: 'Promijeni stol za Ivan Gorupić' }).click()
+  await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 2', { exact: true }).click()
+  const swapSheet = page.getByRole('dialog', { name: 'Zamijeni mjesto' })
+  await expect(swapSheet).toBeVisible()
+  await swapSheet.getByRole('button', { name: 'Zamijeni s Ana Gorupić' }).click()
+
+  await expect(page.getByRole('region', { name: 'Detalji za Stol 2' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '1. Ivan Gorupić, Stol 2' })).toBeVisible()
+  await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
+
+  const firstReview = page.getByRole('heading', { name: 'Stol 1', exact: true }).locator('..').locator('..')
+  const secondReview = page.getByRole('heading', { name: 'Stol 2', exact: true }).locator('..').locator('..')
+  await expect(firstReview.getByText('Ana Gorupić')).toBeVisible()
+  await expect(secondReview.getByText('Ivan Gorupić')).toBeVisible()
+})
+
+test('bulk guest add continues at the next table when the selected table fills', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await openTables(page)
+  const tables = page.locator('[data-table-drop-id]')
+
+  for (let index = 0; index < 2; index += 1) {
+    await tables.nth(index).click()
+    await page.getByRole('button', { name: 'Uredi stol' }).click()
+    const editor = page.getByRole('dialog', { name: 'Uredi stol' })
+    await editor.getByLabel('Broj mjesta').fill('2')
+    await editor.getByRole('button', { name: 'Zatvori' }).click()
+    await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
+  }
+
+  await page.getByRole('button', { name: 'Dodaj goste' }).click()
+  await expect(page.getByText('Kad se odabrani stol napuni, preostali gosti automatski prelaze za sljedeći slobodan stol.')).toBeVisible()
+  await page.locator('#guest-list').fill('Novi Gost 1\nNovi Gost 2\nNovi Gost 3')
+  await page.getByRole('button', { name: 'Dodaj 3 gosta' }).click()
+  await expect(page.getByRole('region', { name: 'Detalji za Stol 1' })).toBeVisible()
+  await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
+
+  const firstReview = page.getByRole('heading', { name: 'Stol 1', exact: true }).locator('..').locator('..')
+  const secondReview = page.getByRole('heading', { name: 'Stol 2', exact: true }).locator('..').locator('..')
+  await expect(firstReview.getByText('Novi Gost 1')).toBeVisible()
+  await expect(firstReview.getByText('Novi Gost 2')).toBeVisible()
+  await expect(secondReview.getByText('Novi Gost 3')).toBeVisible()
+})
+
 test('mobile map supports zoom controls and drag-to-pan', async ({ page }) => {
   await openTables(page)
   const map = page.getByRole('region', { name: 'Mapa rasporeda stolova' })
 
   await expect(map).toHaveAttribute('data-zoom', '0.8')
+  const zoomControls = map.locator('[data-map-zoom-controls]')
+  const [minusBox, fitBox, plusBox, mapBox] = await Promise.all([
+    zoomControls.getByRole('button', { name: 'Smanji mapu' }).boundingBox(),
+    zoomControls.getByRole('button', { name: 'Prikaži cijelu mapu' }).boundingBox(),
+    zoomControls.getByRole('button', { name: 'Povećaj mapu' }).boundingBox(),
+    map.boundingBox()
+  ])
+  expect(Math.abs(minusBox.y - plusBox.y)).toBeLessThan(1)
+  expect(minusBox.x).toBeLessThan(fitBox.x)
+  expect(fitBox.x).toBeLessThan(plusBox.x)
+  expect(minusBox.y - mapBox.y).toBeLessThanOrEqual(13)
+  expect(mapBox.x + mapBox.width - (plusBox.x + plusBox.width)).toBeLessThanOrEqual(13)
   await page.getByRole('button', { name: 'Povećaj mapu' }).click()
   await expect(map).toHaveAttribute('data-zoom', '1')
   await page.getByRole('button', { name: 'Prikaži cijelu mapu' }).click()
@@ -98,6 +178,51 @@ test('mobile map supports zoom controls and drag-to-pan', async ({ page }) => {
   await expect.poll(async () => Number(await map.getAttribute('data-zoom'))).toBeGreaterThan(zoomBeforePinch)
   await map.dispatchEvent('pointerup', { pointerId: 41, pointerType: 'touch', button: 0, clientX: box.x + 110, clientY: box.y + 210 })
   await map.dispatchEvent('pointerup', { pointerId: 42, pointerType: 'touch', button: 0, clientX: box.x + 270, clientY: box.y + 210 })
+})
+
+test('one finger leaves the map for page scroll and two fingers pan it', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await openTables(page)
+  const map = page.getByRole('region', { name: 'Mapa rasporeda stolova' })
+  const box = await map.boundingBox()
+
+  await expect(map).toHaveCSS('touch-action', 'pan-y')
+
+  await map.dispatchEvent('pointerdown', { pointerId: 51, pointerType: 'touch', button: 0, clientX: box.x + 90, clientY: box.y + 360 })
+  await map.dispatchEvent('pointermove', { pointerId: 51, pointerType: 'touch', button: 0, clientX: box.x + 90, clientY: box.y + 280 })
+  await expect(map).toHaveAttribute('data-pan-x', '0')
+  await expect(map).toHaveAttribute('data-pan-y', '0')
+  await map.dispatchEvent('pointerup', { pointerId: 51, pointerType: 'touch', button: 0, clientX: box.x + 90, clientY: box.y + 280 })
+
+  await map.dispatchEvent('pointerdown', { pointerId: 61, pointerType: 'touch', button: 0, clientX: box.x + 90, clientY: box.y + 300 })
+  await map.dispatchEvent('pointerdown', { pointerId: 62, pointerType: 'touch', button: 0, clientX: box.x + 190, clientY: box.y + 300 })
+  await map.dispatchEvent('pointermove', { pointerId: 61, pointerType: 'touch', button: 0, clientX: box.x + 120, clientY: box.y + 330 })
+  await map.dispatchEvent('pointermove', { pointerId: 62, pointerType: 'touch', button: 0, clientX: box.x + 220, clientY: box.y + 330 })
+  await expect(map).not.toHaveAttribute('data-pan-x', '0')
+  await expect(map).not.toHaveAttribute('data-pan-y', '0')
+  await map.dispatchEvent('pointerup', { pointerId: 61, pointerType: 'touch', button: 0, clientX: box.x + 120, clientY: box.y + 330 })
+  await map.dispatchEvent('pointerup', { pointerId: 62, pointerType: 'touch', button: 0, clientX: box.x + 220, clientY: box.y + 330 })
+})
+
+test('table can be dragged close to the map edge after the page is scrolled', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await openTables(page)
+
+  const map = page.getByRole('region', { name: 'Mapa rasporeda stolova' })
+  const firstTable = page.locator('[data-table-drop-id]').first()
+  const position = firstTable.locator('..')
+  await map.scrollIntoViewIfNeeded()
+  await page.evaluate(() => window.scrollBy({ top: 80, behavior: 'instant' }))
+  const mapBox = await map.boundingBox()
+  const tableBox = await firstTable.boundingBox()
+
+  await page.mouse.move(tableBox.x + tableBox.width / 2, tableBox.y + tableBox.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(mapBox.x + 2, mapBox.y + 2, { steps: 8 })
+  await page.mouse.up()
+
+  await expect.poll(async () => Number(await position.getAttribute('data-table-position-x'))).toBeLessThanOrEqual(7)
+  await expect.poll(async () => Number(await position.getAttribute('data-table-position-y'))).toBeLessThanOrEqual(7)
 })
 
 test('nine guests are distributed evenly in one circle around their table', async ({ page }, testInfo) => {
@@ -131,6 +256,17 @@ test('nine guests are distributed evenly in one circle around their table', asyn
     const rect = node.firstElementChild.getBoundingClientRect()
     return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }
   }))
+  const tableVisualBox = await page.locator('[data-table-drop-id]').first().locator(':scope > span').last().boundingBox()
+  const tableCenter = {
+    x: tableVisualBox.x + tableVisualBox.width / 2,
+    y: tableVisualBox.y + tableVisualBox.height / 2
+  }
+  const guestCenterGaps = visualBoxes.map((box) => {
+    const guestCenterX = (box.left + box.right) / 2
+    const guestCenterY = (box.top + box.bottom) / 2
+    return Math.hypot(guestCenterX - tableCenter.x, guestCenterY - tableCenter.y) - tableVisualBox.width / 2
+  })
+  expect(Math.max(...guestCenterGaps)).toBeLessThanOrEqual(23)
   for (let first = 0; first < visualBoxes.length; first += 1) {
     for (let second = first + 1; second < visualBoxes.length; second += 1) {
       const overlaps = visualBoxes[first].left < visualBoxes[second].right
