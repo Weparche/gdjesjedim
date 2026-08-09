@@ -30,7 +30,7 @@ Topla editorial proslava: papirnata ivory podloga, cream paneli, DM Serif Displa
 ## Public event
 - Javni link prvo prikazuje naslov, datum, pretragu i cijelu mapu.
 - Svi stolovi su odmah vidljivi u preglednom stanju. Dodir ili pretraga otvaraju imena jednog stola, a zatvaranje fokusa vraća cijelu mapu.
-- Fotografije su javno vidljive, ali koš za brisanje vidi samo browser koji je fotografiju dodao. Worker vraća vlasnički token samo pri uploadu, u D1 sprema samo njegov SHA-256 otisak, a potvrđeno brisanje uklanja zapis i obje WebP varijante iz R2.
+- Fotografije su javno vidljive, ali gost vidi koš samo na fotografijama koje je dodao njegov browser. Admin vidi istu galeriju na vrhu admin rasporeda i može obrisati svaku fotografiju, uključujući stare fotografije bez vlasničkog tokena. Worker prihvaća vlasnički token gosta ili Bearer token admina događaja; potvrđeno brisanje uklanja zapis i obje WebP varijante iz R2.
 
 ## Surfaces and motion
 - Koristiti postojeće radius/shadow tokene; kartice samo za jasne grupe i stanja.

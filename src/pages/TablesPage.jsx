@@ -11,6 +11,7 @@ import TableSelectorSheet from '../components/tables/TableSelectorSheet.jsx'
 import TableGuestList from '../components/tables/TableGuestList.jsx'
 import GuestImportTextarea from '../components/guests/GuestImportTextarea.jsx'
 import BottomSheet from '../components/common/BottomSheet.jsx'
+import EventGallery from '../components/gallery/EventGallery.jsx'
 import { useEventDraft } from '../context/EventDraftContext.jsx'
 import repository from '../data/repositoryInstance.js'
 
@@ -187,6 +188,12 @@ export default function TablesPage() {
   return (
     <AppShell className="pb-28">
       <PageHeader title="2. Raspored stolova" step={2} totalSteps={3} onBack={() => navigate('/create/confirm')} />
+
+      {draft.event.published && (
+        <div className="mt-5">
+          <EventGallery slug={draft.event.slug} adminEventId={draft.event.id} />
+        </div>
+      )}
 
       <div className="mt-5 rounded-lg bg-white/70 p-4 shadow-card">
         <div className="flex items-start justify-between gap-3">

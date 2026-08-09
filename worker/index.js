@@ -497,12 +497,16 @@ async function handleGallery(request, env, url) {
       'SELECT id, object_key, thumb_key, delete_token_hash FROM photos WHERE id = ?1 AND event_id = ?2'
     ).bind(photoId, event.id).first()
     if (!row) return error('Fotografija nije pronađena.', 404)
-    if (!row.delete_token_hash) return error('Ovu fotografiju nije moguće obrisati s ovog uređaja.', 403)
-
+    const providedAdminToken = bearerToken(request)
+    const adminAuthorized = providedAdminToken
+      ? await safeEqual(providedAdminToken, event.admin_token)
+      : false
     const providedToken = request.headers.get('x-photo-delete-token') ?? ''
-    const providedHash = await sha256Hex(providedToken)
-    if (!(await safeEqual(providedHash, row.delete_token_hash))) {
-      return error('Ovu fotografiju može obrisati samo osoba koja ju je dodala.', 403)
+    const ownerAuthorized = row.delete_token_hash && providedToken
+      ? await safeEqual(await sha256Hex(providedToken), row.delete_token_hash)
+      : false
+    if (!adminAuthorized && !ownerAuthorized) {
+      return error('Ovu fotografiju može obrisati samo osoba koja ju je dodala ili admin događaja.', 403)
     }
 
     await env.DB.prepare('DELETE FROM photos WHERE id = ?1 AND event_id = ?2').bind(photoId, event.id).run()

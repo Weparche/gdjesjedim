@@ -62,7 +62,7 @@ function PhotoViewer({ photos, index, onIndex, onClose, onDelete }) {
   )
 }
 
-export default function EventGallery({ slug }) {
+export default function EventGallery({ slug, adminEventId }) {
   const [photos, setPhotos] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(0)
@@ -78,7 +78,7 @@ export default function EventGallery({ slug }) {
     async function refresh({ quiet = false } = {}) {
       try {
         const next = await galleryRepository.listPhotos(slug)
-        if (active) setPhotos(next)
+        if (active) setPhotos(adminEventId ? next.map((photo) => ({ ...photo, canDelete: true })) : next)
       } catch {
         if (active && !quiet) setError('Galeriju trenutačno nije moguće učitati.')
       } finally {
@@ -92,7 +92,7 @@ export default function EventGallery({ slug }) {
       active = false
       if (refreshTimer) window.clearInterval(refreshTimer)
     }
-  }, [slug])
+  }, [slug, adminEventId])
 
   async function handleFiles(fileList) {
     const files = Array.from(fileList ?? [])
@@ -126,7 +126,7 @@ export default function EventGallery({ slug }) {
     setDeletingId(photo.id)
     setError('')
     try {
-      await galleryRepository.deletePhoto(slug, photo.id)
+      await galleryRepository.deletePhoto(slug, photo.id, { adminEventId })
       setPhotos((current) => current.filter((item) => item.id !== photo.id))
       setViewerIndex((current) => {
         if (current == null) return null
@@ -163,6 +163,9 @@ export default function EventGallery({ slug }) {
         <GalleryButton icon={Camera} onClick={() => cameraInput.current?.click()} disabled={uploading > 0}>Kamera</GalleryButton>
         <GalleryButton icon={ImagePlus} onClick={() => galleryInput.current?.click()} disabled={uploading > 0}>Iz galerije</GalleryButton>
       </div>
+      {adminEventId && (
+        <p className="mt-2 font-ui text-xs text-charcoal-soft">Kao admin možeš obrisati svaku fotografiju iz galerije.</p>
+      )}
       <input ref={cameraInput} className="sr-only" type="file" accept="image/*" capture="environment" aria-label="Snimi fotografiju kamerom" onChange={(event) => handleFiles(event.target.files)} />
       <input ref={galleryInput} className="sr-only" type="file" accept="image/*" multiple aria-label="Dodaj fotografije iz galerije" onChange={(event) => handleFiles(event.target.files)} />
 

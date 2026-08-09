@@ -104,12 +104,22 @@ test('organizer happy path: create event, assign table, publish, guest finds tab
   await expect(page.getByText('STOL 3', { exact: true })).toBeVisible()
 })
 
-test('public invitation protects admin mode with the Mari password', async ({ page }) => {
+test('public invitation protects admin mode with the Mari password', async ({ page }, testInfo) => {
   const publicLink = await publishMarijinoKrstenje(page)
   const publicPath = publicLink.slice(publicLink.indexOf('/e/'))
   await page.goto(publicPath)
 
   await expect(page.getByRole('button', { name: 'Gost', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByLabel('Dodaj fotografije iz galerije').setInputFiles({ name: 'admin-test.png', mimeType: 'image/png', buffer: INVITE_PNG })
+  await expect(page.getByRole('button', { name: 'Otvori fotografiju 1' })).toBeVisible()
+
+  if (process.env.PW_BASE_URL) {
+    await page.evaluate(() => window.localStorage.removeItem('gdjesjedim.photo-delete-tokens.v1'))
+    await page.reload()
+    await expect(page.getByRole('button', { name: 'Otvori fotografiju 1' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Obriši fotografiju 1' })).toHaveCount(0)
+  }
+
   await page.getByRole('button', { name: 'Admin' }).click()
   const adminDialog = page.getByRole('dialog', { name: 'Admin pristup' })
   await expect(adminDialog).toBeVisible()
@@ -123,6 +133,12 @@ test('public invitation protects admin mode with the Mari password', async ({ pa
   await adminDialog.getByRole('button', { name: 'Otključaj admin' }).click()
   await expect(page).toHaveURL(/\/create\/tables/)
   await expect(page.getByRole('heading', { name: '2. Raspored stolova' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Galerija' })).toBeVisible()
+  await expect(page.getByText('Kao admin možeš obrisati svaku fotografiju iz galerije.')).toBeVisible()
+  await page.screenshot({ path: testInfo.outputPath('admin-gallery.png') })
+  await page.getByRole('button', { name: 'Obriši fotografiju 1' }).click()
+  await page.getByRole('dialog', { name: 'Obriši fotografiju?' }).getByRole('button', { name: 'Potvrdi brisanje fotografije' }).click()
+  await expect(page.getByText('Prva fotografija čeka vas')).toBeVisible()
 
   await page.getByRole('button', { name: 'Dodaj goste' }).click()
   const targetTable = page.getByLabel('Odmah smjesti za stol')
