@@ -40,7 +40,7 @@ export default function TableCard({
       <TableIllustration
         table={table}
         guestCount={guests.length}
-        className="h-full w-full"
+        className="absolute left-1/2 top-1/2 h-[132px] w-[132px] -translate-x-1/2 -translate-y-1/2"
         nameClassName="text-[13px]"
         countClassName="text-[9px]"
       />

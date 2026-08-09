@@ -50,6 +50,7 @@ test('organizer edits a table and assigns a guest on the map', async ({ page }) 
   await expect(tables).toHaveCount(2)
   await expect(tables.nth(0)).toHaveCSS('width', '120px')
   await expect(tables.nth(1)).toHaveCSS('width', '120px')
+  await expect(tables.nth(0).locator(':scope > span').last()).toHaveCSS('width', '132px')
   await tables.nth(0).click()
   await expect(page.getByRole('region', { name: 'Detalji za Stol 1' })).toBeVisible()
   await page.getByRole('button', { name: 'Uredi stol' }).click()
@@ -243,6 +244,17 @@ test('nine guests are distributed evenly in one circle around their table', asyn
     const rect = node.firstElementChild.getBoundingClientRect()
     return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }
   }))
+  const tableVisualBox = await page.locator('[data-table-drop-id]').first().locator(':scope > span').last().boundingBox()
+  const tableCenter = {
+    x: tableVisualBox.x + tableVisualBox.width / 2,
+    y: tableVisualBox.y + tableVisualBox.height / 2
+  }
+  const guestCenterGaps = visualBoxes.map((box) => {
+    const guestCenterX = (box.left + box.right) / 2
+    const guestCenterY = (box.top + box.bottom) / 2
+    return Math.hypot(guestCenterX - tableCenter.x, guestCenterY - tableCenter.y) - tableVisualBox.width / 2
+  })
+  expect(Math.max(...guestCenterGaps)).toBeLessThanOrEqual(23)
   for (let first = 0; first < visualBoxes.length; first += 1) {
     for (let second = first + 1; second < visualBoxes.length; second += 1) {
       const overlaps = visualBoxes[first].left < visualBoxes[second].right
