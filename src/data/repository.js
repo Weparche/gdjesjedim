@@ -231,6 +231,15 @@ export function createLocalRepository(storage) {
           }))
         return { event, tables }
       })
+    },
+
+    async unlockAdmin(slug, password) {
+      if (password !== 'Mari') throw new Error('Šifra nije točna. Pokušaj ponovno.')
+      return withDb((db) => {
+        const event = db.events.find((candidate) => candidate.slug === slug && candidate.published === true)
+        if (!event) throw new Error('Događaj nije pronađen.')
+        return event
+      })
     }
   }
 }

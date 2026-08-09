@@ -49,11 +49,22 @@ async function publishMarijinoKrstenje(page) {
 }
 
 test('organizer happy path: create event, assign table, publish, guest finds table', async ({ page }) => {
-  await publishMarijinoKrstenje(page)
+  const publicLink = await publishMarijinoKrstenje(page)
+  const publicPath = publicLink.slice(publicLink.indexOf('/e/'))
 
-  await page.goto('/e/marijino-krstenje')
+  await page.goto(publicPath)
   await expect(page.getByRole('heading', { name: 'Marijino krštenje' })).toBeVisible()
   await expect(page.locator('[data-table-drop-id]')).toHaveCount(3)
+
+  const galleryTitle = page.getByRole('heading', { name: 'Galerija' })
+  const searchTitle = page.getByRole('heading', { name: 'Gdje sjedim?' })
+  await expect(galleryTitle).toBeVisible()
+  expect((await galleryTitle.boundingBox()).y).toBeLessThan((await searchTitle.boundingBox()).y)
+  await page.getByLabel('Dodaj fotografije iz galerije').setInputFiles({ name: 'trenutak.png', mimeType: 'image/png', buffer: INVITE_PNG })
+  await expect(page.getByRole('button', { name: 'Otvori fotografiju 1' })).toBeVisible()
+  await page.getByRole('button', { name: 'Otvori fotografiju 1' }).click()
+  await expect(page.getByRole('dialog', { name: 'Pregled fotografije' })).toBeVisible()
+  await page.getByRole('button', { name: 'Zatvori fotografiju' }).click()
 
   await page.getByLabel('Upiši svoje ime').fill('Ivan Gorupić')
   await page.getByRole('button', { name: 'Pronađi moj stol' }).click()

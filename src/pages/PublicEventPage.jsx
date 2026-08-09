@@ -8,10 +8,9 @@ import SearchGuestCard from '../components/guestpage/SearchGuestCard.jsx'
 import TableResultCard from '../components/guestpage/TableResultCard.jsx'
 import ScheduleRow from '../components/guestpage/ScheduleRow.jsx'
 import TableMap from '../components/tables/TableMap.jsx'
+import EventGallery from '../components/gallery/EventGallery.jsx'
 import { useEventDraft } from '../context/EventDraftContext.jsx'
 import repository from '../data/repositoryInstance.js'
-
-const ADMIN_PASSWORD = 'Mari'
 
 export default function PublicEventPage() {
   const { slug } = useParams()
@@ -63,11 +62,10 @@ export default function PublicEventPage() {
     [layout]
   )
 
-  function handleAdminUnlock(password) {
-    if (password !== ADMIN_PASSWORD) return false
-    setEvent(layout.event)
+  async function handleAdminUnlock(password) {
+    const unlockedEvent = await repository.unlockAdmin(slug, password)
+    setEvent(unlockedEvent)
     navigate('/create/tables')
-    return true
   }
 
   if (layout === undefined) return null
@@ -103,7 +101,11 @@ export default function PublicEventPage() {
         />
       </div>
 
-      <div className="mt-6">
+      <div className="mt-7">
+        <EventGallery slug={slug} />
+      </div>
+
+      <div className="mt-8">
         <SearchGuestCard onSearch={handleSearch} status={status} guestName={foundName} />
       </div>
 

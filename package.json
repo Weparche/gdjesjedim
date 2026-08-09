@@ -7,6 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "cf:dev": "npm run build && wrangler dev",
+    "cf:types": "wrangler types",
+    "db:migrate:local": "wrangler d1 migrations apply gdjesjedim-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply gdjesjedim-db --remote",
+    "deploy": "npm run build && wrangler deploy",
     "test:unit": "node --test src/**/*.test.js",
     "test:e2e": "playwright test"
   },

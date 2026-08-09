@@ -6,12 +6,14 @@ import PrimaryButton from '../buttons/PrimaryButton.jsx'
 export default function AdminUnlockSheet({ open, eventTitle, onClose, onUnlock }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
   const inputRef = useRef(null)
 
   useEffect(() => {
     if (!open) {
       setPassword('')
       setError('')
+      setBusy(false)
       return
     }
 
@@ -19,13 +21,18 @@ export default function AdminUnlockSheet({ open, eventTitle, onClose, onUnlock }
     return () => window.clearTimeout(focusTimer)
   }, [open])
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
-    const unlocked = onUnlock(password)
-    if (!unlocked) {
-      setError('Šifra nije točna. Pokušaj ponovno.')
+    setBusy(true)
+    setError('')
+    try {
+      await onUnlock(password)
+    } catch (caught) {
+      setError(caught.message || 'Šifra nije točna. Pokušaj ponovno.')
       inputRef.current?.focus()
       inputRef.current?.select()
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -73,8 +80,8 @@ export default function AdminUnlockSheet({ open, eventTitle, onClose, onUnlock }
           </p>
         )}
 
-        <PrimaryButton type="submit" className="mt-5" disabled={!password}>
-          Otključaj admin
+        <PrimaryButton type="submit" className="mt-5" disabled={!password || busy}>
+          {busy ? 'Provjeravam…' : 'Otključaj admin'}
         </PrimaryButton>
       </form>
     </BottomSheet>

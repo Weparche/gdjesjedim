@@ -60,3 +60,20 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   outline: 2px solid var(--color-gold-deep);
   outline-offset: 2px;
 }
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 104px;
+  gap: 2px;
+}
+
+.gallery-photo-featured {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.gallery-grid > :only-child {
+  grid-column: 1 / -1;
+  grid-row: span 3;
+}
