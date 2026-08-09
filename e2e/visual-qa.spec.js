@@ -22,7 +22,7 @@ async function settle(page) {
   await page.waitForTimeout(150)
 }
 
-test('capture all 8 primary screens', async ({ page }) => {
+test('capture all 9 primary screens', async ({ page }) => {
   await page.goto('/')
   await settle(page)
   await page.screenshot({ path: `${outDir}/01-landing.png` })
@@ -41,19 +41,20 @@ test('capture all 8 primary screens', async ({ page }) => {
   await page.getByRole('button', { name: 'Potvrdi podatke' }).click()
   await page.getByRole('button', { name: 'Potvrdi podatke' }).click()
 
+  await page.getByRole('button', { name: 'Dodaj goste' }).click()
   await page.locator('#guest-list').fill('Ivan Gorupić\nAna Gorupić\nMarko Horvat\nIvana Horvat\nPetar Marić')
   await page.getByRole('button', { name: /Dodaj 5 gostiju/ }).click()
-  await expect(page.getByText('Ivan Gorupić')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ivan Gorupić' })).toBeVisible()
   await settle(page)
   await page.screenshot({ path: `${outDir}/03-guests.png` })
-  await page.getByRole('button', { name: 'Nastavi na stolove' }).click()
-
+  await expect(page).toHaveURL(/\/create\/tables/)
   for (let i = 0; i < 3; i++) {
     await page.getByRole('button', { name: 'Dodaj stol' }).click()
   }
   await page.getByRole('button', { name: 'Ivan Gorupić' }).click()
   await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 3').click()
   await page.getByRole('dialog', { name: 'Odaberi stol' }).waitFor({ state: 'hidden' })
+  await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
   await settle(page)
   await page.screenshot({ path: `${outDir}/04-tables.png` })
   await page.getByRole('button', { name: 'Nastavi na objavu' }).click()
@@ -75,10 +76,15 @@ test('capture all 8 primary screens', async ({ page }) => {
   await page.goto(`/e/${slug}`)
   await settle(page)
   await page.screenshot({ path: `${outDir}/07-guest-search.png` })
+  await page.getByRole('button', { name: 'Admin' }).click()
+  await page.getByRole('dialog', { name: 'Admin pristup' }).waitFor()
+  await settle(page)
+  await page.screenshot({ path: `${outDir}/08-admin-unlock.png` })
+  await page.getByRole('dialog', { name: 'Admin pristup' }).getByLabel('Zatvori').click()
   await page.getByLabel('Upiši svoje ime').fill('Ivan Gorupić')
   await page.getByRole('button', { name: 'Pronađi moj stol' }).click()
-  await page.getByText('STOL 3').waitFor()
+  await page.getByText('STOL 3', { exact: true }).waitFor()
   await page.waitForTimeout(400) // let the 0.3s framer-motion fade-in settle before capture
   await settle(page)
-  await page.screenshot({ path: `${outDir}/08-guest-result.png` })
+  await page.screenshot({ path: `${outDir}/09-guest-result.png` })
 })

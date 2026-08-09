@@ -1,4 +1,18 @@
-export default function InvitationPreview() {
+export default function InvitationPreview({ src, type, name }) {
+  if (src) {
+    return (
+      <div className="overflow-hidden rounded-lg bg-white shadow-card">
+        {type === 'application/pdf' ? (
+          <object data={src} type="application/pdf" className="h-[420px] w-full" aria-label={name ?? 'Učitana pozivnica'}>
+            <a href={src} download={name}>Otvori učitanu pozivnicu</a>
+          </object>
+        ) : (
+          <img src={src} alt={name ?? 'Učitana pozivnica'} className="max-h-[520px] w-full object-contain" />
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="overflow-hidden rounded-lg bg-white shadow-card">
       <svg viewBox="0 0 320 360" className="w-full" role="img" aria-label="Pozivnica za Marijino krštenje">

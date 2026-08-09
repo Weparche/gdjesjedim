@@ -17,9 +17,9 @@ for (const query of VARIANTS) {
     await fileChooser.setFiles({ name: 'invite.png', mimeType: 'image/png', buffer: Buffer.from('fake') })
     await page.getByRole('button', { name: 'Potvrdi podatke' }).click()
     await page.getByRole('button', { name: 'Potvrdi podatke' }).click()
+    await page.getByRole('button', { name: 'Dodaj goste' }).click()
     await page.locator('#guest-list').fill('Ivan Gorupić')
     await page.getByRole('button', { name: /Dodaj 1 gosta/ }).click()
-    await page.getByRole('button', { name: 'Nastavi na stolove' }).click()
     await page.getByRole('button', { name: 'Dodaj stol' }).click()
     await page.getByRole('button', { name: 'Ivan Gorupić' }).click()
     await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 1').click()
@@ -32,6 +32,6 @@ for (const query of VARIANTS) {
     await page.goto(`/e/${slug}`)
     await page.getByLabel('Upiši svoje ime').fill(query)
     await page.getByRole('button', { name: 'Pronađi moj stol' }).click()
-    await expect(page.getByText('STOL 1')).toBeVisible()
+    await expect(page.getByText('STOL 1', { exact: true })).toBeVisible()
   })
 }

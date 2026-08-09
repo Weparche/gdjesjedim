@@ -1,0 +1,34 @@
+{
+  "createdAt": "2026-08-09T11:29:16.063Z",
+  "projectRoot": "C:\\GdjeSjedim",
+  "baseUrl": "http://127.0.0.1:5199",
+  "status": "PASS",
+  "results": [
+    {
+      "viewport": "desktop",
+      "size": {
+        "width": 1440,
+        "height": 1000
+      },
+      "route": "home",
+      "path": "/",
+      "url": "http://127.0.0.1:5199/",
+      "status": "PASS",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "viewport": "mobile",
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "route": "home",
+      "path": "/",
+      "url": "http://127.0.0.1:5199/",
+      "status": "PASS",
+      "errors": [],
+      "warnings": []
+    }
+  ]
+}

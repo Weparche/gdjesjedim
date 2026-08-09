@@ -9,6 +9,7 @@
   --color-charcoal-soft: #6B5F55;
   --color-blush: #E7A9AE;
   --color-blush-soft: #F7E3E1;
+  --color-terracotta: #B8624A;
   --color-whatsapp: #25D366;
 
   --font-display: "DM Serif Display", serif;
@@ -36,6 +37,15 @@ body {
   color: var(--color-charcoal);
   font-family: var(--font-ui);
   overflow-x: hidden;
+}
+
+button, input, textarea, select {
+  font: inherit;
+}
+
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--color-gold-deep);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

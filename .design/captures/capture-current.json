@@ -1,0 +1,35 @@
+{
+  "createdAt": "2026-08-09T11:30:43.554Z",
+  "projectRoot": "C:\\GdjeSjedim",
+  "route": "/",
+  "results": [
+    {
+      "target": "desktop",
+      "file": ".design\\captures\\desktop-current.png",
+      "url": "http://127.0.0.1:5199/",
+      "title": "GdjeSjedim.hr — Jedan link za svaku proslavu",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "scroll": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "target": "mobile",
+      "file": ".design\\captures\\mobile-current.png",
+      "url": "http://127.0.0.1:5199/",
+      "title": "GdjeSjedim.hr — Jedan link za svaku proslavu",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scroll": {
+        "width": 390,
+        "height": 844
+      }
+    }
+  ]
+}

@@ -3,6 +3,14 @@ import { normalizeName } from '../lib/normalize.js'
 import { slugify } from '../lib/slug.js'
 
 const STORAGE_KEY = 'gdjesjedim:db'
+const DEFAULT_TABLE_POSITIONS = [
+  { x: 28, y: 22 },
+  { x: 72, y: 22 },
+  { x: 28, y: 50 },
+  { x: 72, y: 50 },
+  { x: 28, y: 78 },
+  { x: 72, y: 78 }
+]
 
 function emptyDb() {
   return { events: [], scheduleItems: [], tables: [], guests: [] }
@@ -47,7 +55,7 @@ export function createLocalRepository(storage) {
   }
 
   return {
-    async createEvent({ title, type, date }) {
+    async createEvent({ title, type, date, invitationKey, invitationName, invitationType }) {
       return withDb((db) => {
         const event = {
           id: generateId(),
@@ -56,6 +64,9 @@ export function createLocalRepository(storage) {
           type,
           date,
           invitationUrl: undefined,
+          invitationKey,
+          invitationName,
+          invitationType,
           published: false
         }
         db.events.push(event)
@@ -98,7 +109,18 @@ export function createLocalRepository(storage) {
 
     async addTables(eventId, tables) {
       return withDb((db) => {
-        const created = tables.map((t) => ({ id: generateId(), eventId, ...t }))
+        const existingCount = db.tables.filter((table) => table.eventId === eventId).length
+        const created = tables.map((t, index) => ({
+          ...(DEFAULT_TABLE_POSITIONS[existingCount + index] ?? { x: 20 + ((existingCount + index) % 4) * 20, y: 50 }),
+          id: generateId(),
+          eventId,
+          name: t.name ?? `Stol ${existingCount + index + 1}`,
+          capacity: t.capacity ?? 8,
+          shape: t.shape ?? 'round',
+          x: t.x ?? DEFAULT_TABLE_POSITIONS[existingCount + index]?.x ?? 20 + ((existingCount + index) % 4) * 20,
+          y: t.y ?? DEFAULT_TABLE_POSITIONS[existingCount + index]?.y ?? 50,
+          ...t
+        }))
         db.tables.push(...created)
         return created
       })
@@ -106,6 +128,24 @@ export function createLocalRepository(storage) {
 
     async getTables(eventId) {
       return withDb((db) => db.tables.filter((t) => t.eventId === eventId))
+    },
+
+    async updateTable(id, patch) {
+      return withDb((db) => {
+        const table = db.tables.find((t) => t.id === id)
+        if (!table) throw new Error(`Table not found: ${id}`)
+        Object.assign(table, patch)
+        return table
+      })
+    },
+
+    async removeTable(id) {
+      return withDb((db) => {
+        db.tables = db.tables.filter((t) => t.id !== id)
+        db.guests.forEach((guest) => {
+          if (guest.tableId === id) guest.tableId = undefined
+        })
+      })
     },
 
     async addGuests(eventId, names) {
@@ -169,6 +209,27 @@ export function createLocalRepository(storage) {
         if (!guest) return null
         const table = db.tables.find((t) => t.id === guest.tableId)
         return { guest, table }
+      })
+    },
+
+    async getPublishedLayout(slug) {
+      return withDb((db) => {
+        const event = db.events.find((e) => e.slug === slug)
+        if (!event || event.published !== true) return null
+        const tables = db.tables
+          .filter((table) => table.eventId === event.id)
+          .map((table) => ({
+            id: table.id,
+            name: table.name,
+            capacity: table.capacity,
+            shape: table.shape ?? 'round',
+            x: table.x ?? 14,
+            y: table.y ?? 18,
+            guests: db.guests
+              .filter((guest) => guest.eventId === event.id && guest.tableId === table.id)
+              .map((guest) => ({ id: guest.id, name: guest.name }))
+          }))
+        return { event, tables }
       })
     }
   }

@@ -1,0 +1,16 @@
+{
+  "baseUrl": "http://127.0.0.1:5199",
+  "referenceRoute": "/",
+  "routes": [
+    {
+      "name": "home",
+      "path": "/",
+      "primaryAction": {
+        "label": "Napravi besplatno",
+        "required": true,
+        "firstViewport": true
+      }
+    }
+  ],
+  "ignoreConsolePatterns": []
+}

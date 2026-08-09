@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test'
 
+const INVITE_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64'
+)
+
 async function publishMarijinoKrstenje(page) {
   await page.goto('/')
   await page.getByRole('button', { name: 'Krštenje' }).click()
@@ -9,25 +14,30 @@ async function publishMarijinoKrstenje(page) {
   const fileChooserPromise = page.waitForEvent('filechooser')
   await page.getByRole('button', { name: /Učitaj pozivnicu/ }).click()
   const fileChooser = await fileChooserPromise
-  await fileChooser.setFiles({ name: 'invite.png', mimeType: 'image/png', buffer: Buffer.from('fake') })
+  await fileChooser.setFiles({ name: 'invite.png', mimeType: 'image/png', buffer: INVITE_PNG })
+  await expect(page.getByAltText('invite.png')).toBeVisible()
+  await page.reload()
+  await expect(page.getByAltText('invite.png')).toBeVisible()
 
   await page.getByRole('button', { name: 'Potvrdi podatke' }).click()
   await expect(page).toHaveURL(/\/create\/confirm/)
   await page.getByRole('button', { name: 'Potvrdi podatke' }).click()
 
-  await expect(page).toHaveURL(/\/create\/guests/)
+  await expect(page).toHaveURL(/\/create\/tables/)
+  await page.getByRole('button', { name: 'Dodaj goste' }).click()
   await page.locator('#guest-list').fill('Ivan Gorupić\nAna Gorupić\nMarko Horvat\nIvana Horvat\nPetar Marić')
   await page.getByRole('button', { name: /Dodaj 5 gostiju/ }).click()
-  await expect(page.getByText('Ivan Gorupić')).toBeVisible()
-  await page.getByRole('button', { name: 'Nastavi na stolove' }).click()
-
-  await expect(page).toHaveURL(/\/create\/tables/)
+  await expect(page.getByRole('button', { name: 'Ivan Gorupić' })).toBeVisible()
+  await expect(page.getByText('Pregled dodjele')).toBeVisible()
+  await expect(page.locator('ol li').filter({ hasText: 'Ivan Gorupić' })).toHaveCount(1)
+  await expect(page.getByText('Ukupno gostiju')).toBeVisible()
   for (let i = 0; i < 3; i++) {
     await page.getByRole('button', { name: 'Dodaj stol' }).click()
   }
   await page.getByRole('button', { name: 'Ivan Gorupić' }).click()
   await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 3').click()
-  await expect(page.locator('li').filter({ hasText: 'Ivan Gorupić' }).getByText('Stol 3')).toBeVisible()
+  const tableThreeReview = page.getByRole('heading', { name: 'Stol 3', exact: true }).locator('..').locator('..')
+  await expect(tableThreeReview.getByText('Ivan Gorupić')).toBeVisible()
   await page.getByRole('button', { name: 'Nastavi na objavu' }).click()
 
   await expect(page).toHaveURL(/\/create\/publish/)
@@ -43,9 +53,43 @@ test('organizer happy path: create event, assign table, publish, guest finds tab
 
   await page.goto('/e/marijino-krstenje')
   await expect(page.getByRole('heading', { name: 'Marijino krštenje' })).toBeVisible()
+  await expect(page.locator('[data-table-drop-id]')).toHaveCount(3)
 
   await page.getByLabel('Upiši svoje ime').fill('Ivan Gorupić')
   await page.getByRole('button', { name: 'Pronađi moj stol' }).click()
 
-  await expect(page.getByText('STOL 3')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Detalji za Stol 3' })).toBeVisible()
+  await expect(page.getByLabel('1. Ivan Gorupić, Stol 3')).toBeVisible()
+  await expect(page.getByText('STOL 3', { exact: true })).toBeVisible()
+})
+
+test('public invitation protects admin mode with the Mari password', async ({ page }) => {
+  const publicLink = await publishMarijinoKrstenje(page)
+  const publicPath = publicLink.slice(publicLink.indexOf('/e/'))
+  await page.goto(publicPath)
+
+  await expect(page.getByRole('button', { name: 'Gost' })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Admin' }).click()
+  const adminDialog = page.getByRole('dialog', { name: 'Admin pristup' })
+  await expect(adminDialog).toBeVisible()
+
+  const password = adminDialog.getByLabel('Administratorska šifra')
+  await password.fill('krivo')
+  await adminDialog.getByRole('button', { name: 'Otključaj admin' }).click()
+  await expect(adminDialog.getByRole('alert')).toHaveText('Šifra nije točna. Pokušaj ponovno.')
+
+  await password.fill('Mari')
+  await adminDialog.getByRole('button', { name: 'Otključaj admin' }).click()
+  await expect(page).toHaveURL(/\/create\/tables/)
+  await expect(page.getByRole('heading', { name: '2. Raspored stolova' })).toBeVisible()
+
+  await page.locator('[data-table-drop-id]').first().click()
+  await page.getByRole('button', { name: 'Uredi stol' }).click()
+  const editor = page.getByRole('dialog', { name: 'Uredi stol' })
+  await editor.getByLabel('Naziv stola').fill('Glavni stol')
+  await editor.getByRole('button', { name: 'Zatvori' }).click()
+  await expect(page.locator('[data-table-drop-id]').first()).toHaveAttribute('aria-label', /Glavni stol/)
+
+  await page.goto(publicPath)
+  await expect(page.locator('[data-table-drop-id]').first()).toHaveAttribute('aria-label', /Glavni stol/)
 })

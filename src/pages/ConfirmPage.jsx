@@ -24,18 +24,25 @@ export default function ConfirmPage() {
   )
 
   async function confirm() {
-    const event = await repository.createEvent({ title, type: draft.event?.type ?? 'other', date })
+    const event = await repository.createEvent({
+      title,
+      type: draft.event?.type ?? 'other',
+      date,
+      invitationKey: draft.invitation?.key,
+      invitationName: draft.invitation?.name,
+      invitationType: draft.invitation?.type
+    })
     await repository.addScheduleItems(
       event.id,
       scheduleItems.map((item) => ({ time: item.time, title: item.title, locationName: item.locationName }))
     )
     setEvent(event)
-    navigate('/create/guests')
+    navigate('/create/tables')
   }
 
   return (
     <AppShell>
-      <PageHeader title="Potvrdi podatke" step={1} totalSteps={4} onBack={() => navigate('/create/upload')} />
+      <PageHeader title="1. Potvrdi podatke" step={1} totalSteps={3} onBack={() => navigate('/create/upload')} />
       <div className="mt-6 space-y-4">
         <ExtractedDataCard title={title} date={displayDate} scheduleItems={scheduleItems} />
         <PrimaryButton onClick={confirm}>Potvrdi podatke</PrimaryButton>

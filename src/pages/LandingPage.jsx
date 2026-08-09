@@ -15,14 +15,15 @@ const EVENT_TYPES = [
 
 export default function LandingPage() {
   const navigate = useNavigate()
-  const { draft, setEvent } = useEventDraft()
+  const { draft, setEvent, reset } = useEventDraft()
 
   function selectType(type) {
     setEvent({ ...draft.event, type })
   }
 
   function goToCreate() {
-    if (!draft.event?.type) setEvent({ ...draft.event, type: 'other' })
+    reset()
+    setEvent({ type: draft.event?.type ?? 'other' })
     navigate('/create/upload')
   }
 

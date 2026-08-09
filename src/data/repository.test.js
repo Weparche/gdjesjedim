@@ -51,6 +51,45 @@ test('addGuests computes normalizedName and assignGuestToTable links a table', a
   assert.equal(updated.tableId, table.id)
 })
 
+test('tables retain shape, capacity, and editable position', async () => {
+  const repo = freshRepo()
+  const event = await repo.createEvent({ title: 'VjenÄanje', type: 'wedding', date: '2026-05-05' })
+  const [table] = await repo.addTables(event.id, [{ name: 'Mladenci', capacity: 12, shape: 'square', x: 42, y: 58 }])
+  assert.equal(table.shape, 'square')
+  assert.equal(table.capacity, 12)
+  assert.equal(table.x, 42)
+  assert.equal(table.y, 58)
+
+  const updated = await repo.updateTable(table.id, { capacity: 10, shape: 'round', x: 55, y: 30 })
+  assert.deepEqual(
+    { capacity: updated.capacity, shape: updated.shape, x: updated.x, y: updated.y },
+    { capacity: 10, shape: 'round', x: 55, y: 30 }
+  )
+})
+
+test('published layout groups public guest names by table', async () => {
+  const repo = freshRepo()
+  const event = await repo.createEvent({ title: 'KrÅ¡tenje', type: 'christening', date: '2026-09-26' })
+  const [guest] = await repo.addGuests(event.id, ['Ivan GorupiÄ‡'])
+  const [table] = await repo.addTables(event.id, [{ name: 'Stol 2', capacity: 8, shape: 'square', x: 24, y: 36 }])
+  await repo.assignGuestToTable(guest.id, table.id)
+  const beforePublish = await repo.getPublishedLayout(event.slug)
+  assert.equal(beforePublish, null)
+  await repo.publishEvent(event.id)
+
+  const layout = await repo.getPublishedLayout(event.slug)
+  assert.equal(layout.event.title, 'KrÅ¡tenje')
+  assert.deepEqual(layout.tables[0], {
+    id: table.id,
+    name: 'Stol 2',
+    capacity: 8,
+    shape: 'square',
+    x: 24,
+    y: 36,
+    guests: [{ id: guest.id, name: 'Ivan GorupiÄ‡' }]
+  })
+})
+
 test('removeGuest deletes the guest', async () => {
   const repo = freshRepo()
   const event = await repo.createEvent({ title: 'Krštenje', type: 'christening', date: '2026-09-26' })

@@ -10,7 +10,11 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: ['icons/icon.svg'],
+      includeAssets: [
+        'icons/icon.svg',
+        'assets/table-round-with-chairs.png',
+        'assets/table-square-with-chairs.png'
+      ],
       manifest: {
         name: 'GdjeSjedim.hr',
         short_name: 'GdjeSjedim',

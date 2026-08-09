@@ -17,7 +17,7 @@ export default function PageTransition({ children }) {
   return (
     <motion.div
       key={pathname}
-      initial={{ opacity: 0, x: 12 }}
+      initial={{ opacity: 1, x: 12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
     >

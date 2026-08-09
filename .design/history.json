@@ -1,0 +1,14 @@
+[
+  {
+    "iteration": 0,
+    "designScore": 84,
+    "majorIssueCount": 1,
+    "notes": "Functional seating map implemented; first render needed deterministic transition and map-label spacing refinement."
+  },
+  {
+    "iteration": 1,
+    "designScore": 88,
+    "majorIssueCount": 0,
+    "notes": "Mobile-only shell, map-first seating editor and public map verified."
+  }
+]

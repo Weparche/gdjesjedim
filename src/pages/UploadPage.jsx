@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sparkles, User, Calendar, MapPin, Utensils } from 'lucide-react'
 import AppShell from '../components/layout/AppShell.jsx'
@@ -9,6 +9,8 @@ import InvitationUploader from '../components/upload/InvitationUploader.jsx'
 import InvitationPreview from '../components/upload/InvitationPreview.jsx'
 import { mockExtractedData } from '../lib/mockExtraction.js'
 import { useEventDraft } from '../context/EventDraftContext.jsx'
+import { getInvitation, saveInvitation } from '../data/invitationStore.js'
+import { generateId } from '../lib/id.js'
 
 const SCHEDULE_ICONS = [MapPin, Utensils]
 
@@ -19,18 +21,45 @@ function formatCroatianDate(isoDate) {
 
 export default function UploadPage() {
   const navigate = useNavigate()
-  const { setExtractedData } = useEventDraft()
-  const [uploaded, setUploaded] = useState(false)
+  const { draft, setExtractedData, setInvitation } = useEventDraft()
+  const [uploaded, setUploaded] = useState(Boolean(draft.invitation))
+  const [previewSrc, setPreviewSrc] = useState('')
   const data = mockExtractedData()
+
+  useEffect(() => {
+    let objectUrl = ''
+    let cancelled = false
+    async function loadInvitation() {
+      if (!draft.invitation?.key) return
+      const file = await getInvitation(draft.invitation.key).catch(() => null)
+      if (!file || cancelled) return
+      objectUrl = URL.createObjectURL(file)
+      setPreviewSrc(objectUrl)
+      setUploaded(true)
+    }
+    loadInvitation()
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [draft.invitation])
 
   function confirm() {
     setExtractedData(data)
     navigate('/create/confirm')
   }
 
+  async function handleFileSelected(file) {
+    const key = `invitation-${generateId()}`
+    await saveInvitation(key, file)
+    setInvitation({ key, name: file.name, type: file.type, size: file.size })
+    setPreviewSrc(URL.createObjectURL(file))
+    setUploaded(true)
+  }
+
   return (
     <AppShell>
-      <PageHeader title="1. Učitaj pozivnicu" step={1} totalSteps={4} />
+      <PageHeader title="1. Učitaj pozivnicu" step={1} totalSteps={3} />
 
       <div className="mt-6">
         {!uploaded ? (
@@ -39,11 +68,11 @@ export default function UploadPage() {
               Učitaj sliku pozivnice. Pročitat ćemo naziv proslave, datum i raspored, a ti ih možeš
               ispraviti u sljedećem koraku.
             </p>
-            <InvitationUploader onFileSelected={() => setUploaded(true)} />
+            <InvitationUploader onFileSelected={handleFileSelected} />
           </div>
         ) : (
           <div className="space-y-4">
-            <InvitationPreview />
+            <InvitationPreview src={previewSrc} type={draft.invitation?.type} name={draft.invitation?.name} />
 
             <div className="rounded-lg bg-white p-4 shadow-card">
               <p className="flex items-center gap-2 font-ui text-sm font-semibold text-charcoal">
@@ -72,7 +101,15 @@ export default function UploadPage() {
             </div>
 
             <PrimaryButton onClick={confirm}>Potvrdi podatke</PrimaryButton>
-            <SecondaryButton onClick={() => setUploaded(false)}>Promijeni</SecondaryButton>
+            <SecondaryButton
+              onClick={() => {
+                setInvitation(null)
+                setPreviewSrc('')
+                setUploaded(false)
+              }}
+            >
+              Promijeni
+            </SecondaryButton>
           </div>
         )}
       </div>

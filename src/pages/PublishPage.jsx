@@ -51,7 +51,7 @@ export default function PublishPage() {
 
   return (
     <AppShell>
-      <PageHeader title="4. Objavi" step={4} totalSteps={4} onBack={() => navigate('/create/tables')} />
+      <PageHeader title="3. Objavi" step={3} totalSteps={3} onBack={() => navigate('/create/tables')} />
 
       <div className="mt-6 rounded-lg bg-white p-5 shadow-card">
         <p className="font-display text-xl text-charcoal">{draft.event.title}</p>

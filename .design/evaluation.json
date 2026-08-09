@@ -1,0 +1,27 @@
+{
+  "designScore": 88,
+  "threshold": 85,
+  "categories": {
+    "productIntent": { "score": 9, "max": 10, "severity": "PASS" },
+    "composition": { "score": 12, "max": 14, "severity": "PASS" },
+    "hierarchy": { "score": 11, "max": 12, "severity": "PASS" },
+    "primaryAction": { "score": 9, "max": 10, "severity": "PASS" },
+    "mobileAdaptation": { "score": 13, "max": 14, "severity": "PASS" },
+    "typography": { "score": 7, "max": 8, "severity": "PASS" },
+    "spacing": { "score": 7, "max": 8, "severity": "PASS" },
+    "surfacesColor": { "score": 5, "max": 6, "severity": "PASS" },
+    "imagery": { "score": 3, "max": 4, "severity": "PASS" },
+    "interactionPresentation": { "score": 4, "max": 5, "severity": "PASS" },
+    "distinctiveness": { "score": 6, "max": 7, "severity": "PASS" },
+    "polish": { "score": 2, "max": 2, "severity": "PASS" }
+  },
+  "gates": {
+    "browserQA": "PASS",
+    "primaryFlow": "PASS",
+    "pwa": "PASS",
+    "accessibility": "PASS",
+    "responsive": "PASS",
+    "visualAudit": "PASS"
+  },
+  "decision": "SHIP"
+}

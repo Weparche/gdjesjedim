@@ -1,0 +1,41 @@
+{
+  "createdAt": "2026-08-09T11:30:16.304Z",
+  "projectRoot": "C:\\GdjeSjedim",
+  "status": "PASS",
+  "results": [
+    {
+      "name": "Pokreni izradu rasporeda",
+      "goal": "Doći do prvog sigurnog koraka izrade prije odabira lokalne datoteke",
+      "status": "PASS",
+      "safeMode": true,
+      "safeBoundary": "Učitaj pozivnicu",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "status": "PASS",
+          "detail": "clicked Napravi besplatno"
+        },
+        {
+          "index": 2,
+          "action": "assert-url",
+          "status": "PASS",
+          "detail": "URL assertion passed"
+        },
+        {
+          "index": 3,
+          "action": "assert-visible",
+          "status": "PASS",
+          "detail": "visibility assertion passed"
+        },
+        {
+          "index": 4,
+          "action": "click",
+          "status": "PASS",
+          "detail": "safe boundary reached; click intentionally not executed"
+        }
+      ],
+      "finalUrl": "http://127.0.0.1:5199/create/upload"
+    }
+  ]
+}

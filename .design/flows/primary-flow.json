@@ -1,0 +1,13 @@
+{
+  "name": "Pokreni izradu rasporeda",
+  "goal": "Doći do prvog sigurnog koraka izrade prije odabira lokalne datoteke",
+  "startPath": "/",
+  "safeMode": true,
+  "steps": [
+    { "action": "click", "role": "button", "name": "Napravi besplatno" },
+    { "action": "assert-url", "url": "/create/upload" },
+    { "action": "assert-visible", "text": "Učitaj pozivnicu" },
+    { "action": "click", "role": "button", "name": "Učitaj pozivnicu", "stopBefore": true }
+  ],
+  "success": "Upload korak je spreman bez slanja datoteke u vanjski servis"
+}

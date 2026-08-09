@@ -1,0 +1,85 @@
+{
+  "createdAt": "2026-08-09T11:29:33.740Z",
+  "projectRoot": "C:\\GdjeSjedim",
+  "url": "http://127.0.0.1:5199/",
+  "status": "PASS",
+  "checks": [
+    {
+      "code": "page-load",
+      "status": "PASS",
+      "message": "Application loads"
+    },
+    {
+      "code": "manifest",
+      "status": "PASS",
+      "message": "Manifest loaded from http://127.0.0.1:5199/manifest.webmanifest"
+    },
+    {
+      "code": "manifest-name",
+      "status": "PASS",
+      "message": "Manifest defines name/short_name"
+    },
+    {
+      "code": "start-url",
+      "status": "PASS",
+      "message": "start_url: /"
+    },
+    {
+      "code": "display-mode",
+      "status": "PASS",
+      "message": "App display mode: standalone"
+    },
+    {
+      "code": "prefer-related-applications",
+      "status": "PASS",
+      "message": "Related native applications are not preferred"
+    },
+    {
+      "code": "background-color",
+      "status": "PASS",
+      "message": "background_color: #FAF4EA"
+    },
+    {
+      "code": "manifest-theme-color",
+      "status": "PASS",
+      "message": "theme_color: #C79A4B"
+    },
+    {
+      "code": "icon-192",
+      "status": "PASS",
+      "message": "192×192 application icon exists"
+    },
+    {
+      "code": "icon-512",
+      "status": "PASS",
+      "message": "512×512 application icon exists"
+    },
+    {
+      "code": "html-theme-color",
+      "status": "PASS",
+      "message": "HTML theme-color: #C79A4B"
+    },
+    {
+      "code": "service-worker",
+      "status": "PASS",
+      "message": "1 service worker registration(s)"
+    },
+    {
+      "code": "service-worker-control",
+      "status": "PASS",
+      "message": "Page is controlled by a service worker"
+    },
+    {
+      "code": "offline-shell",
+      "status": "PASS",
+      "message": "Application renders while offline"
+    },
+    {
+      "code": "secure-context",
+      "status": "PASS",
+      "message": "Localhost development context is acceptable"
+    }
+  ],
+  "errors": [],
+  "warnings": []
+}
