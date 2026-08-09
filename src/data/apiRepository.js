@@ -1,3 +1,5 @@
+import { backendUrl } from './backendUrl.js'
+
 const TOKEN_KEY = 'gdjesjedim:admin-tokens'
 const ACTIVE_TOKEN_KEY = 'gdjesjedim:active-admin-token'
 
@@ -34,7 +36,7 @@ export function createApiRepository(storage = window.localStorage) {
     }
     const token = eventId ? tokenFor(eventId) : null
     if (token) headers.set('Authorization', `Bearer ${token}`)
-    const response = await fetch(path, { ...options, headers })
+    const response = await fetch(backendUrl(path), { ...options, headers })
     if (response.status === 204) return undefined
     const payload = await response.json().catch(() => null)
     if (!response.ok) throw new Error(payload?.error ?? 'Zahtjev nije uspio.')

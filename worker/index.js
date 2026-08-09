@@ -1,4 +1,6 @@
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024
+const CORS_METHODS = 'GET, HEAD, POST, PATCH, DELETE, OPTIONS'
+const CORS_HEADERS = 'Authorization, Content-Type, X-File-Name'
 const DEFAULT_TABLE_POSITIONS = [
   { x: 28, y: 22 },
   { x: 72, y: 22 },
@@ -7,6 +9,38 @@ const DEFAULT_TABLE_POSITIONS = [
   { x: 28, y: 78 },
   { x: 72, y: 78 }
 ]
+
+function allowedCorsOrigin(request) {
+  const origin = request.headers.get('Origin')
+  if (!origin) return null
+  try {
+    const { hostname, protocol } = new URL(origin)
+    const isPagesApp = protocol === 'https:' && (
+      hostname === 'gdjesjedim.pages.dev' || hostname.endsWith('.gdjesjedim.pages.dev')
+    )
+    const isLocal = protocol === 'http:' && (hostname === 'localhost' || hostname === '127.0.0.1')
+    return isPagesApp || isLocal ? origin : null
+  } catch {
+    return null
+  }
+}
+
+function corsHeaders(origin) {
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': CORS_METHODS,
+    'Access-Control-Allow-Headers': CORS_HEADERS,
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin'
+  }
+}
+
+function withCors(response, origin) {
+  if (!origin) return response
+  const headers = new Headers(response.headers)
+  for (const [name, value] of Object.entries(corsHeaders(origin))) headers.set(name, value)
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers })
+}
 
 function json(data, status = 200, headers = {}) {
   return Response.json(data, {
@@ -487,12 +521,18 @@ async function routeRequest(request, env) {
 
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url)
+    const corsOrigin = allowedCorsOrigin(request)
+    if (request.method === 'OPTIONS' && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/media/'))) {
+      if (!corsOrigin) return error('Origin nije dopušten.', 403)
+      return new Response(null, { status: 204, headers: corsHeaders(corsOrigin) })
+    }
     try {
-      return await routeRequest(request, env)
+      return withCors(await routeRequest(request, env), corsOrigin)
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : String(caught)
-      console.error(JSON.stringify({ message: 'request_failed', path: new URL(request.url).pathname, error: message }))
-      return error('Dogodila se neočekivana greška.', 500)
+      console.error(JSON.stringify({ message: 'request_failed', path: url.pathname, error: message }))
+      return withCors(error('Dogodila se neočekivana greška.', 500), corsOrigin)
     }
   }
 }
