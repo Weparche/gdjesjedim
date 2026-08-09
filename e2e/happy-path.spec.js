@@ -94,6 +94,15 @@ test('public invitation protects admin mode with the Mari password', async ({ pa
   await expect(page).toHaveURL(/\/create\/tables/)
   await expect(page.getByRole('heading', { name: '2. Raspored stolova' })).toBeVisible()
 
+  await page.getByRole('button', { name: 'Dodaj goste' }).click()
+  const targetTable = page.getByLabel('Odmah smjesti za stol')
+  await expect(targetTable).toHaveValue(/.+/)
+  await page.locator('#guest-list').fill('Novi Gost')
+  await page.getByRole('button', { name: 'Dodaj 1 gosta' }).click()
+  await expect(page.getByRole('region', { name: 'Detalji za Stol 1' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '1. Novi Gost, Stol 1' })).toBeVisible()
+  await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
+
   await page.locator('[data-table-drop-id]').first().click()
   await page.getByRole('button', { name: 'Uredi stol' }).click()
   const editor = page.getByRole('dialog', { name: 'Uredi stol' })
@@ -103,4 +112,6 @@ test('public invitation protects admin mode with the Mari password', async ({ pa
 
   await page.goto(publicPath)
   await expect(page.locator('[data-table-drop-id]').first()).toHaveAttribute('aria-label', /Glavni stol/)
+  await page.locator('[data-table-drop-id]').first().click()
+  await expect(page.getByLabel('1. Novi Gost, Glavni stol')).toBeVisible()
 })

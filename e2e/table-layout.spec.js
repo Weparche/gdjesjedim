@@ -100,6 +100,27 @@ test('mobile map supports zoom controls and drag-to-pan', async ({ page }) => {
   await map.dispatchEvent('pointerup', { pointerId: 42, pointerType: 'touch', button: 0, clientX: box.x + 270, clientY: box.y + 210 })
 })
 
+test('table can be dragged close to the map edge after the page is scrolled', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await openTables(page)
+
+  const map = page.getByRole('region', { name: 'Mapa rasporeda stolova' })
+  const firstTable = page.locator('[data-table-drop-id]').first()
+  const position = firstTable.locator('..')
+  await map.scrollIntoViewIfNeeded()
+  await page.evaluate(() => window.scrollBy({ top: 80, behavior: 'instant' }))
+  const mapBox = await map.boundingBox()
+  const tableBox = await firstTable.boundingBox()
+
+  await page.mouse.move(tableBox.x + tableBox.width / 2, tableBox.y + tableBox.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(mapBox.x + 2, mapBox.y + 2, { steps: 8 })
+  await page.mouse.up()
+
+  await expect.poll(async () => Number(await position.getAttribute('data-table-position-x'))).toBeLessThanOrEqual(7)
+  await expect.poll(async () => Number(await position.getAttribute('data-table-position-y'))).toBeLessThanOrEqual(7)
+})
+
 test('nine guests are distributed evenly in one circle around their table', async ({ page }, testInfo) => {
   await openTables(page)
   await seedAssignedGuests(page, 9, 9, [

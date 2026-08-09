@@ -5,6 +5,8 @@ import { pluralizeGosti } from '../../lib/plural.js'
 
 export default function GuestImportTextarea({ onImport }) {
   const [text, setText] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
   const names = parseGuestList(text)
   const empty = names.length === 0
 
@@ -27,15 +29,24 @@ export default function GuestImportTextarea({ onImport }) {
           type="button"
           whileTap={{ scale: 0.97 }}
           transition={{ duration: 0.15 }}
-          disabled={empty}
-          onClick={() => {
-            onImport(names)
-            setText('')
+          disabled={empty || saving}
+          onClick={async () => {
+            setSaving(true)
+            setError('')
+            try {
+              await onImport(names)
+              setText('')
+            } catch (caught) {
+              setError(caught.message || 'Goste nije moguće spremiti. Pokušaj ponovno.')
+            } finally {
+              setSaving(false)
+            }
           }}
           className="inline-flex min-h-[48px] w-full items-center justify-center rounded-md border border-gold bg-white px-6 font-ui text-base font-semibold text-charcoal transition-colors hover:bg-cream disabled:border-cream disabled:text-charcoal-soft disabled:pointer-events-none"
         >
-          {empty ? 'Zalijepi imena za dodavanje' : `Dodaj ${names.length} ${pluralizeGosti(names.length)}`}
+          {saving ? 'Spremam goste…' : empty ? 'Zalijepi imena za dodavanje' : `Dodaj ${names.length} ${pluralizeGosti(names.length)}`}
         </motion.button>
+        {error && <p role="alert" className="mt-2 font-ui text-sm font-semibold text-terracotta">{error}</p>}
       </div>
     </div>
   )

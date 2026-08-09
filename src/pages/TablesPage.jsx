@@ -22,6 +22,7 @@ export default function TablesPage() {
   const [editingTableId, setEditingTableId] = useState(null)
   const [activeGuestId, setActiveGuestId] = useState(null)
   const [isGuestSheetOpen, setIsGuestSheetOpen] = useState(false)
+  const [guestTargetTableId, setGuestTargetTableId] = useState('')
   const [draggingGuestId, setDraggingGuestId] = useState(null)
   const dragRef = useRef({ id: null, x: 0, y: 0, moved: false })
 
@@ -98,9 +99,10 @@ export default function TablesPage() {
   }
 
   async function addGuests(names) {
-    await repository.addGuests(draft.event.id, names)
+    await repository.addGuests(draft.event.id, names, guestTargetTableId || undefined)
     setIsGuestSheetOpen(false)
     await refresh()
+    if (guestTargetTableId) setFocusedTableId(guestTargetTableId)
   }
 
   async function updateTable(patch) {
@@ -185,7 +187,10 @@ export default function TablesPage() {
           </div>
           <button
             type="button"
-            onClick={() => setIsGuestSheetOpen(true)}
+            onClick={() => {
+              setGuestTargetTableId(tables[0]?.id ?? '')
+              setIsGuestSheetOpen(true)
+            }}
             className="inline-flex min-h-[44px] items-center gap-1.5 rounded-pill border border-gold px-3 font-ui text-sm font-semibold text-charcoal transition-colors hover:bg-cream"
           >
             <Plus size={16} strokeWidth={1.5} aria-hidden="true" />
@@ -301,6 +306,22 @@ export default function TablesPage() {
         title="Dodaj goste"
         subtitle="Jedno ime po retku"
       >
+        {tables.length > 0 && (
+          <label htmlFor="guest-target-table" className="mb-3 block font-ui text-sm font-semibold text-charcoal">
+            Odmah smjesti za stol
+            <select
+              id="guest-target-table"
+              value={guestTargetTableId}
+              onChange={(event) => setGuestTargetTableId(event.target.value)}
+              className="mt-2 min-h-[52px] w-full rounded-md border border-gold/40 bg-ivory px-4 font-ui text-base text-charcoal focus:border-gold-deep"
+            >
+              {tables.map((table) => (
+                <option key={table.id} value={table.id}>{table.name} · {table.capacity} mjesta</option>
+              ))}
+              <option value="">Bez dodijeljenog mjesta</option>
+            </select>
+          </label>
+        )}
         <GuestImportTextarea onImport={addGuests} />
       </BottomSheet>
     </AppShell>

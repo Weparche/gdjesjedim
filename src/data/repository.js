@@ -148,14 +148,17 @@ export function createLocalRepository(storage) {
       })
     },
 
-    async addGuests(eventId, names) {
+    async addGuests(eventId, names, tableId) {
       return withDb((db) => {
+        if (tableId && !db.tables.some((table) => table.id === tableId && table.eventId === eventId)) {
+          throw new Error('Odabrani stol nije valjan.')
+        }
         const created = names.map((name) => ({
           id: generateId(),
           eventId,
           name,
           normalizedName: normalizeName(name),
-          tableId: undefined
+          tableId: tableId ?? undefined
         }))
         db.guests.push(...created)
         return created

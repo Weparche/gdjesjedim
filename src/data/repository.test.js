@@ -51,6 +51,18 @@ test('addGuests computes normalizedName and assignGuestToTable links a table', a
   assert.equal(updated.tableId, table.id)
 })
 
+test('addGuests can place new guests directly at a selected table', async () => {
+  const repo = freshRepo()
+  const event = await repo.createEvent({ title: 'Krštenje', type: 'christening', date: '2026-09-26' })
+  const [table] = await repo.addTables(event.id, [{ name: 'Obiteljski stol', capacity: 8 }])
+
+  const [guest] = await repo.addGuests(event.id, ['Novi Gost'], table.id)
+  const storedGuests = await repo.getGuests(event.id)
+
+  assert.equal(guest.tableId, table.id)
+  assert.equal(storedGuests[0].tableId, table.id)
+})
+
 test('tables retain shape, capacity, and editable position', async () => {
   const repo = freshRepo()
   const event = await repo.createEvent({ title: 'VjenÄanje', type: 'wedding', date: '2026-05-05' })

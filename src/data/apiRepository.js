@@ -76,9 +76,9 @@ export function createApiRepository(storage = window.localStorage) {
       return table
     },
     removeTable: (id) => request(`/api/tables/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${findAnyToken()}` } }),
-    addGuests(eventId, names) {
+    addGuests(eventId, names, tableId) {
       activateToken(eventId)
-      return request(`/api/events/${encodeURIComponent(eventId)}/guests`, { method: 'POST', body: JSON.stringify({ names }) }, eventId)
+      return request(`/api/events/${encodeURIComponent(eventId)}/guests`, { method: 'POST', body: JSON.stringify({ names, tableId }) }, eventId)
     },
     getGuests(eventId) {
       activateToken(eventId)

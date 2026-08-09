@@ -4,9 +4,7 @@ import { useRef, useState } from 'react'
 import FocusedTableView from './FocusedTableView.jsx'
 import TableCard from './TableCard.jsx'
 
-const TABLE_RADIUS = 60
-const MAP_GUTTER = 10
-const MAP_LABEL_HEIGHT = 42
+const TABLE_POSITION_GUTTER = 6
 const MIN_ZOOM = 0.7
 const MAX_ZOOM = 1.8
 const ZOOM_STEP = 0.2
@@ -159,13 +157,9 @@ export default function TableMap({
     const screenY = event.clientY - rect.top
     const canvasX = rect.width / 2 + (screenX - rect.width / 2 - view.x) / view.zoom
     const canvasY = rect.height / 2 + (screenY - rect.height / 2 - view.y) / view.zoom
-    const horizontalInset = ((TABLE_RADIUS + MAP_GUTTER) / rect.width) * 100
-    const topInset = ((TABLE_RADIUS + MAP_LABEL_HEIGHT) / rect.height) * 100
-    const bottomInset = ((TABLE_RADIUS + MAP_GUTTER) / rect.height) * 100
-
     return {
-      x: Math.max(horizontalInset, Math.min(100 - horizontalInset, (canvasX / rect.width) * 100)),
-      y: Math.max(topInset, Math.min(100 - bottomInset, (canvasY / rect.height) * 100))
+      x: Math.max(TABLE_POSITION_GUTTER, Math.min(100 - TABLE_POSITION_GUTTER, (canvasX / rect.width) * 100)),
+      y: Math.max(TABLE_POSITION_GUTTER, Math.min(100 - TABLE_POSITION_GUTTER, (canvasY / rect.height) * 100))
     }
   }
 
@@ -330,6 +324,8 @@ export default function TableMap({
           return (
             <div
               key={table.id}
+              data-table-position-x={Number(activePosition.x).toFixed(1)}
+              data-table-position-y={Number(activePosition.y).toFixed(1)}
               className={`absolute transition-opacity ${draggingTable?.id === table.id ? 'z-20' : 'z-0'}`}
               style={{ left: `${activePosition.x}%`, top: `${activePosition.y}%` }}
             >

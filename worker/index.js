@@ -321,12 +321,16 @@ async function handleGuests(request, env, url) {
     if (request.method === 'POST') {
       if (!(await requireEventAdmin(request, env, eventId))) return error('Nedopušten pristup.', 401)
       const body = await boundedJson(request)
+      if (body.tableId) {
+        const targetTable = await env.DB.prepare('SELECT event_id FROM tables WHERE id = ?1').bind(body.tableId).first()
+        if (!targetTable || targetTable.event_id !== eventId) return error('Odabrani stol nije valjan.', 400)
+      }
       const names = Array.isArray(body.names) ? body.names.filter((name) => typeof name === 'string' && name.trim()) : []
-      const created = names.map((name) => ({ id: crypto.randomUUID(), eventId, name: name.trim(), normalizedName: normalizeName(name), tableId: undefined }))
+      const created = names.map((name) => ({ id: crypto.randomUUID(), eventId, name: name.trim(), normalizedName: normalizeName(name), tableId: body.tableId ?? undefined }))
       if (created.length) {
         await env.DB.batch(created.map((guest) => env.DB.prepare(
-          'INSERT INTO guests (id, event_id, name, normalized_name) VALUES (?1, ?2, ?3, ?4)'
-        ).bind(guest.id, guest.eventId, guest.name, guest.normalizedName)))
+          'INSERT INTO guests (id, event_id, name, normalized_name, table_id) VALUES (?1, ?2, ?3, ?4, ?5)'
+        ).bind(guest.id, guest.eventId, guest.name, guest.normalizedName, guest.tableId ?? null)))
       }
       return json(created, 201)
     }
