@@ -100,6 +100,30 @@ test('mobile map supports zoom controls and drag-to-pan', async ({ page }) => {
   await map.dispatchEvent('pointerup', { pointerId: 42, pointerType: 'touch', button: 0, clientX: box.x + 270, clientY: box.y + 210 })
 })
 
+test('one finger leaves the map for page scroll and two fingers pan it', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await openTables(page)
+  const map = page.getByRole('region', { name: 'Mapa rasporeda stolova' })
+  const box = await map.boundingBox()
+
+  await expect(map).toHaveCSS('touch-action', 'pan-y')
+
+  await map.dispatchEvent('pointerdown', { pointerId: 51, pointerType: 'touch', button: 0, clientX: box.x + 90, clientY: box.y + 360 })
+  await map.dispatchEvent('pointermove', { pointerId: 51, pointerType: 'touch', button: 0, clientX: box.x + 90, clientY: box.y + 280 })
+  await expect(map).toHaveAttribute('data-pan-x', '0')
+  await expect(map).toHaveAttribute('data-pan-y', '0')
+  await map.dispatchEvent('pointerup', { pointerId: 51, pointerType: 'touch', button: 0, clientX: box.x + 90, clientY: box.y + 280 })
+
+  await map.dispatchEvent('pointerdown', { pointerId: 61, pointerType: 'touch', button: 0, clientX: box.x + 90, clientY: box.y + 300 })
+  await map.dispatchEvent('pointerdown', { pointerId: 62, pointerType: 'touch', button: 0, clientX: box.x + 190, clientY: box.y + 300 })
+  await map.dispatchEvent('pointermove', { pointerId: 61, pointerType: 'touch', button: 0, clientX: box.x + 120, clientY: box.y + 330 })
+  await map.dispatchEvent('pointermove', { pointerId: 62, pointerType: 'touch', button: 0, clientX: box.x + 220, clientY: box.y + 330 })
+  await expect(map).not.toHaveAttribute('data-pan-x', '0')
+  await expect(map).not.toHaveAttribute('data-pan-y', '0')
+  await map.dispatchEvent('pointerup', { pointerId: 61, pointerType: 'touch', button: 0, clientX: box.x + 120, clientY: box.y + 330 })
+  await map.dispatchEvent('pointerup', { pointerId: 62, pointerType: 'touch', button: 0, clientX: box.x + 220, clientY: box.y + 330 })
+})
+
 test('table can be dragged close to the map edge after the page is scrolled', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
   await openTables(page)

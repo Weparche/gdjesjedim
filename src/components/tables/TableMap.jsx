@@ -166,14 +166,20 @@ export default function TableMap({
   function startPanning(event) {
     const pointers = pointerCacheRef.current
     const alreadyTracking = pointers.size > 0
+    const isTouchPointer = event.pointerType === 'touch'
     if (
       focusedTable
       || event.button !== 0
       || (!alreadyTracking && event.target.closest?.('[data-map-interactive], [data-table-drop-id]'))
     ) return
 
-    event.preventDefault()
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
+    // One finger belongs to normal page scrolling. Touch panning and pinching
+    // begin only after the second finger reaches the map.
+    if (isTouchPointer && pointers.size === 1) return
+
+    event.preventDefault()
     try {
       event.currentTarget.setPointerCapture?.(event.pointerId)
     } catch {
@@ -298,7 +304,7 @@ export default function TableMap({
       data-pan-x={Math.round(view.x)}
       data-pan-y={Math.round(view.y)}
       className={`relative min-h-[432px] overflow-hidden rounded-lg border border-cream bg-cover bg-center shadow-inner ${panGesture ? 'cursor-grabbing' : 'cursor-grab'}`}
-      style={{ backgroundImage: "url('/assets/seating-paper-bg.png')", touchAction: focusedTable ? 'auto' : 'none' }}
+      style={{ backgroundImage: "url('/assets/seating-paper-bg.png')", touchAction: focusedTable ? 'auto' : 'pan-y' }}
       onPointerDown={startPanning}
       onPointerMove={moveInteraction}
       onPointerUp={finishInteraction}
