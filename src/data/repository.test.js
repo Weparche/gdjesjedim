@@ -63,6 +63,37 @@ test('addGuests can place new guests directly at a selected table', async () => 
   assert.equal(storedGuests[0].tableId, table.id)
 })
 
+test('addGuests fills the selected table and continues at the next free table', async () => {
+  const repo = freshRepo()
+  const event = await repo.createEvent({ title: 'Krštenje', type: 'christening', date: '2026-09-26' })
+  const [firstTable, secondTable] = await repo.addTables(event.id, [
+    { name: 'Stol 1', capacity: 2 },
+    { name: 'Stol 2', capacity: 2 }
+  ])
+  await repo.addGuests(event.id, ['Postojeći Gost'], firstTable.id)
+
+  const created = await repo.addGuests(event.id, ['Ana', 'Ivan', 'Josip'], firstTable.id)
+
+  assert.deepEqual(created.map((guest) => guest.tableId), [firstTable.id, secondTable.id, secondTable.id])
+})
+
+test('swapGuests exchanges the guests table assignments', async () => {
+  const repo = freshRepo()
+  const event = await repo.createEvent({ title: 'Krštenje', type: 'christening', date: '2026-09-26' })
+  const [firstTable, secondTable] = await repo.addTables(event.id, [
+    { name: 'Stol 1', capacity: 1 },
+    { name: 'Stol 2', capacity: 1 }
+  ])
+  const [ivan] = await repo.addGuests(event.id, ['Ivan'], firstTable.id)
+  const [josip] = await repo.addGuests(event.id, ['Josip'], secondTable.id)
+
+  await repo.swapGuests(ivan.id, josip.id)
+  const guests = await repo.getGuests(event.id)
+
+  assert.equal(guests.find((guest) => guest.id === ivan.id).tableId, secondTable.id)
+  assert.equal(guests.find((guest) => guest.id === josip.id).tableId, firstTable.id)
+})
+
 test('tables retain shape, capacity, and editable position', async () => {
   const repo = freshRepo()
   const event = await repo.createEvent({ title: 'VjenÄanje', type: 'wedding', date: '2026-05-05' })

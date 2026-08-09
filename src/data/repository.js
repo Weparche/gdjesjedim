@@ -153,13 +153,26 @@ export function createLocalRepository(storage) {
         if (tableId && !db.tables.some((table) => table.id === tableId && table.eventId === eventId)) {
           throw new Error('Odabrani stol nije valjan.')
         }
-        const created = names.map((name) => ({
-          id: generateId(),
-          eventId,
-          name,
-          normalizedName: normalizeName(name),
-          tableId: tableId ?? undefined
-        }))
+        const eventTables = db.tables.filter((table) => table.eventId === eventId)
+        const preferredIndex = eventTables.findIndex((table) => table.id === tableId)
+        const orderedTables = preferredIndex < 0
+          ? []
+          : [...eventTables.slice(preferredIndex), ...eventTables.slice(0, preferredIndex)]
+        const occupied = new Map(eventTables.map((table) => [
+          table.id,
+          db.guests.filter((guest) => guest.eventId === eventId && guest.tableId === table.id).length
+        ]))
+        const created = names.map((name) => {
+          const target = orderedTables.find((table) => (occupied.get(table.id) ?? 0) < Number(table.capacity ?? 0))
+          if (target) occupied.set(target.id, (occupied.get(target.id) ?? 0) + 1)
+          return {
+            id: generateId(),
+            eventId,
+            name,
+            normalizedName: normalizeName(name),
+            tableId: target?.id
+          }
+        })
         db.guests.push(...created)
         return created
       })
@@ -188,8 +201,28 @@ export function createLocalRepository(storage) {
       return withDb((db) => {
         const guest = db.guests.find((g) => g.id === guestId)
         if (!guest) throw new Error(`Guest not found: ${guestId}`)
+        if (tableId && guest.tableId !== tableId) {
+          const table = db.tables.find((item) => item.id === tableId && item.eventId === guest.eventId)
+          if (!table) throw new Error('Odabrani stol nije valjan.')
+          const occupied = db.guests.filter((item) => item.tableId === tableId).length
+          if (occupied >= Number(table.capacity ?? 0)) throw new Error('Stol je pun. Odaberi gosta za zamjenu.')
+        }
         guest.tableId = tableId ?? undefined
         return guest
+      })
+    },
+
+    async swapGuests(guestId, otherGuestId) {
+      return withDb((db) => {
+        const guest = db.guests.find((item) => item.id === guestId)
+        const otherGuest = db.guests.find((item) => item.id === otherGuestId)
+        if (!guest || !otherGuest || guest.id === otherGuest.id || guest.eventId !== otherGuest.eventId) {
+          throw new Error('Gosti za zamjenu nisu valjani.')
+        }
+        const guestTableId = guest.tableId
+        guest.tableId = otherGuest.tableId
+        otherGuest.tableId = guestTableId
+        return { guest, otherGuest }
       })
     },
 

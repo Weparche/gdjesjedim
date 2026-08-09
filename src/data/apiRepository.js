@@ -87,6 +87,7 @@ export function createApiRepository(storage = window.localStorage) {
     updateGuest: (id, patch) => request(`/api/guests/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch), headers: { Authorization: `Bearer ${findAnyToken()}` } }),
     removeGuest: (id) => request(`/api/guests/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${findAnyToken()}` } }),
     assignGuestToTable: (guestId, tableId) => request(`/api/guests/${encodeURIComponent(guestId)}/assign`, { method: 'POST', body: JSON.stringify({ tableId }), headers: { Authorization: `Bearer ${findAnyToken()}` } }),
+    swapGuests: (guestId, otherGuestId) => request(`/api/guests/${encodeURIComponent(guestId)}/swap`, { method: 'POST', body: JSON.stringify({ otherGuestId }), headers: { Authorization: `Bearer ${findAnyToken()}` } }),
     publishEvent: (id) => request(`/api/events/${encodeURIComponent(id)}/publish`, { method: 'POST' }, id),
     searchGuest: (slug, query) => request(`/api/public/${encodeURIComponent(slug)}/search?q=${encodeURIComponent(query)}`),
     getPublishedLayout: (slug) => request(`/api/public/${encodeURIComponent(slug)}/layout`).catch((caught) => {

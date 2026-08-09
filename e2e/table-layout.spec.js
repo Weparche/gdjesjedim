@@ -59,13 +59,80 @@ test('organizer edits a table and assigns a guest on the map', async ({ page }) 
   await dialog.getByRole('button', { name: 'Četvrtasti' }).click()
   await dialog.getByRole('button', { name: 'Zatvori' }).click()
 
-  await page.getByRole('button', { name: 'Ivan Gorupić' }).click()
+  await page.getByRole('button', { name: 'Ivan Gorupić', exact: true }).click()
   await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 1').click()
 
   await expect(page.getByRole('button', { name: '1. Ivan Gorupić, Stol 1' })).toBeVisible()
   await expect(tables.nth(0)).toHaveAttribute('aria-label', /1 od 10 mjesta/)
   await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
   await expect(page.locator('[data-overview-guest-id]').filter({ hasText: 'Ivan Gorupić' })).toBeVisible()
+})
+
+test('assignment review moves guests by tap and swaps seats at a full table', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await openTables(page)
+  const tables = page.locator('[data-table-drop-id]')
+  await expect(tables).toHaveCount(2)
+
+  for (let index = 0; index < 2; index += 1) {
+    await tables.nth(index).click()
+    await page.getByRole('button', { name: 'Uredi stol' }).click()
+    const editor = page.getByRole('dialog', { name: 'Uredi stol' })
+    await editor.getByLabel('Broj mjesta').fill('1')
+    await editor.getByRole('button', { name: 'Zatvori' }).click()
+    await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
+  }
+
+  await page.getByRole('button', { name: 'Promijeni stol za Ivan Gorupić' }).click()
+  await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 1', { exact: true }).click()
+  await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
+
+  await page.getByRole('button', { name: 'Promijeni stol za Ana Gorupić' }).click()
+  await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 2', { exact: true }).click()
+  await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
+
+  await page.getByRole('button', { name: 'Promijeni stol za Ivan Gorupić' }).click()
+  await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 2', { exact: true }).click()
+  const swapSheet = page.getByRole('dialog', { name: 'Zamijeni mjesto' })
+  await expect(swapSheet).toBeVisible()
+  await swapSheet.getByRole('button', { name: 'Zamijeni s Ana Gorupić' }).click()
+
+  await expect(page.getByRole('region', { name: 'Detalji za Stol 2' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '1. Ivan Gorupić, Stol 2' })).toBeVisible()
+  await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
+
+  const firstReview = page.getByRole('heading', { name: 'Stol 1', exact: true }).locator('..').locator('..')
+  const secondReview = page.getByRole('heading', { name: 'Stol 2', exact: true }).locator('..').locator('..')
+  await expect(firstReview.getByText('Ana Gorupić')).toBeVisible()
+  await expect(secondReview.getByText('Ivan Gorupić')).toBeVisible()
+})
+
+test('bulk guest add continues at the next table when the selected table fills', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await openTables(page)
+  const tables = page.locator('[data-table-drop-id]')
+
+  for (let index = 0; index < 2; index += 1) {
+    await tables.nth(index).click()
+    await page.getByRole('button', { name: 'Uredi stol' }).click()
+    const editor = page.getByRole('dialog', { name: 'Uredi stol' })
+    await editor.getByLabel('Broj mjesta').fill('2')
+    await editor.getByRole('button', { name: 'Zatvori' }).click()
+    await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
+  }
+
+  await page.getByRole('button', { name: 'Dodaj goste' }).click()
+  await expect(page.getByText('Kad se odabrani stol napuni, preostali gosti automatski prelaze za sljedeći slobodan stol.')).toBeVisible()
+  await page.locator('#guest-list').fill('Novi Gost 1\nNovi Gost 2\nNovi Gost 3')
+  await page.getByRole('button', { name: 'Dodaj 3 gosta' }).click()
+  await expect(page.getByRole('region', { name: 'Detalji za Stol 1' })).toBeVisible()
+  await page.getByRole('button', { name: 'Zatvori detalje stola' }).click()
+
+  const firstReview = page.getByRole('heading', { name: 'Stol 1', exact: true }).locator('..').locator('..')
+  const secondReview = page.getByRole('heading', { name: 'Stol 2', exact: true }).locator('..').locator('..')
+  await expect(firstReview.getByText('Novi Gost 1')).toBeVisible()
+  await expect(firstReview.getByText('Novi Gost 2')).toBeVisible()
+  await expect(secondReview.getByText('Novi Gost 3')).toBeVisible()
 })
 
 test('mobile map supports zoom controls and drag-to-pan', async ({ page }) => {

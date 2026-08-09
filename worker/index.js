@@ -321,12 +321,27 @@ async function handleGuests(request, env, url) {
     if (request.method === 'POST') {
       if (!(await requireEventAdmin(request, env, eventId))) return error('Nedopušten pristup.', 401)
       const body = await boundedJson(request)
-      if (body.tableId) {
-        const targetTable = await env.DB.prepare('SELECT event_id FROM tables WHERE id = ?1').bind(body.tableId).first()
-        if (!targetTable || targetTable.event_id !== eventId) return error('Odabrani stol nije valjan.', 400)
-      }
       const names = Array.isArray(body.names) ? body.names.filter((name) => typeof name === 'string' && name.trim()) : []
-      const created = names.map((name) => ({ id: crypto.randomUUID(), eventId, name: name.trim(), normalizedName: normalizeName(name), tableId: body.tableId ?? undefined }))
+      const tableRows = body.tableId
+        ? (await env.DB.prepare(
+          `SELECT tables.id, tables.capacity, COUNT(guests.id) AS occupied
+           FROM tables LEFT JOIN guests ON guests.table_id = tables.id
+           WHERE tables.event_id = ?1 GROUP BY tables.id ORDER BY tables.rowid`
+        ).bind(eventId).all()).results
+        : []
+      const preferredIndex = tableRows.findIndex((table) => table.id === body.tableId)
+      if (body.tableId && preferredIndex < 0) return error('Odabrani stol nije valjan.', 400)
+      const orderedTables = preferredIndex < 0
+        ? []
+        : [...tableRows.slice(preferredIndex), ...tableRows.slice(0, preferredIndex)]
+      const occupied = new Map(tableRows.map((table) => [table.id, Number(table.occupied ?? 0)]))
+      const created = names.map((name) => {
+        const target = orderedTables.find((table) => (occupied.get(table.id) ?? 0) < Number(table.capacity ?? 0))
+        if (target) occupied.set(target.id, (occupied.get(target.id) ?? 0) + 1)
+        return {
+          id: crypto.randomUUID(), eventId, name: name.trim(), normalizedName: normalizeName(name), tableId: target?.id
+        }
+      })
       if (created.length) {
         await env.DB.batch(created.map((guest) => env.DB.prepare(
           'INSERT INTO guests (id, event_id, name, normalized_name, table_id) VALUES (?1, ?2, ?3, ?4, ?5)'
@@ -334,6 +349,29 @@ async function handleGuests(request, env, url) {
       }
       return json(created, 201)
     }
+  }
+
+  const swapMatch = url.pathname.match(/^\/api\/guests\/([^/]+)\/swap$/)
+  if (swapMatch && request.method === 'POST') {
+    const id = decodeURIComponent(swapMatch[1])
+    if (!(await requireGuestAdmin(request, env, id))) return error('Nedopušten pristup.', 401)
+    const body = await boundedJson(request)
+    const [guest, otherGuest] = await Promise.all([
+      env.DB.prepare('SELECT * FROM guests WHERE id = ?1').bind(id).first(),
+      env.DB.prepare('SELECT * FROM guests WHERE id = ?1').bind(body.otherGuestId ?? '').first()
+    ])
+    if (!guest || !otherGuest || guest.id === otherGuest.id || guest.event_id !== otherGuest.event_id) {
+      return error('Gosti za zamjenu nisu valjani.', 400)
+    }
+    await env.DB.batch([
+      env.DB.prepare('UPDATE guests SET table_id = ?1 WHERE id = ?2').bind(otherGuest.table_id ?? null, guest.id),
+      env.DB.prepare('UPDATE guests SET table_id = ?1 WHERE id = ?2').bind(guest.table_id ?? null, otherGuest.id)
+    ])
+    const [updatedGuest, updatedOtherGuest] = await Promise.all([
+      env.DB.prepare('SELECT * FROM guests WHERE id = ?1').bind(guest.id).first(),
+      env.DB.prepare('SELECT * FROM guests WHERE id = ?1').bind(otherGuest.id).first()
+    ])
+    return json({ guest: guestFromRow(updatedGuest), otherGuest: guestFromRow(updatedOtherGuest) })
   }
 
   const assignMatch = url.pathname.match(/^\/api\/guests\/([^/]+)\/assign$/)
@@ -344,8 +382,13 @@ async function handleGuests(request, env, url) {
     if (!guest) return error('Gost nije pronađen.', 404)
     const body = await boundedJson(request)
     if (body.tableId) {
-      const table = await env.DB.prepare('SELECT event_id FROM tables WHERE id = ?1').bind(body.tableId).first()
+      const table = await env.DB.prepare(
+        'SELECT tables.event_id, tables.capacity, COUNT(guests.id) AS occupied FROM tables LEFT JOIN guests ON guests.table_id = tables.id WHERE tables.id = ?1 GROUP BY tables.id'
+      ).bind(body.tableId).first()
       if (!table || table.event_id !== guest.event_id) return error('Stol nije valjan.', 400)
+      if (guest.table_id !== body.tableId && Number(table.occupied ?? 0) >= Number(table.capacity ?? 0)) {
+        return error('Stol je pun. Odaberi gosta za zamjenu.', 409)
+      }
     }
     await env.DB.prepare('UPDATE guests SET table_id = ?1 WHERE id = ?2').bind(body.tableId ?? null, id).run()
     return json(guestFromRow(await env.DB.prepare('SELECT * FROM guests WHERE id = ?1').bind(id).first()))

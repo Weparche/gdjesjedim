@@ -8,6 +8,7 @@ import SecondaryButton from '../components/buttons/SecondaryButton.jsx'
 import TableMap from '../components/tables/TableMap.jsx'
 import TableEditorSheet from '../components/tables/TableEditorSheet.jsx'
 import TableSelectorSheet from '../components/tables/TableSelectorSheet.jsx'
+import TableGuestList from '../components/tables/TableGuestList.jsx'
 import GuestImportTextarea from '../components/guests/GuestImportTextarea.jsx'
 import BottomSheet from '../components/common/BottomSheet.jsx'
 import { useEventDraft } from '../context/EventDraftContext.jsx'
@@ -21,6 +22,9 @@ export default function TablesPage() {
   const [focusedTableId, setFocusedTableId] = useState(null)
   const [editingTableId, setEditingTableId] = useState(null)
   const [activeGuestId, setActiveGuestId] = useState(null)
+  const [swapTargetTableId, setSwapTargetTableId] = useState(null)
+  const [assignmentSaving, setAssignmentSaving] = useState(false)
+  const [assignmentError, setAssignmentError] = useState('')
   const [isGuestSheetOpen, setIsGuestSheetOpen] = useState(false)
   const [guestTargetTableId, setGuestTargetTableId] = useState('')
   const [draggingGuestId, setDraggingGuestId] = useState(null)
@@ -82,6 +86,10 @@ export default function TablesPage() {
   const unassignedGuests = guests.filter((guest) => guest.tableId == null)
   const editingTable = tables.find((table) => table.id === editingTableId)
   const activeGuest = guests.find((guest) => guest.id === activeGuestId)
+  const activeGuestTable = tables.find((table) => table.id === activeGuest?.tableId)
+  const swapTargetTable = tables.find((table) => table.id === swapTargetTableId)
+  const swapCandidates = swapTargetTableId ? (guestsByTable[swapTargetTableId] ?? []) : []
+  const guestCountsByTable = Object.fromEntries(tables.map((table) => [table.id, (guestsByTable[table.id] ?? []).length]))
   const assignedCount = guests.length - unassignedGuests.length
 
   if (!draft.event) return null
@@ -92,10 +100,59 @@ export default function TablesPage() {
   }
 
   async function assignGuest(guestId, tableId) {
-    await repository.assignGuestToTable(guestId, tableId)
+    const movingGuest = guests.find((guest) => guest.id === guestId)
+    const targetTable = tables.find((table) => table.id === tableId)
+    const targetGuests = tableId ? (guestsByTable[tableId] ?? []) : []
+    if (tableId && movingGuest?.tableId !== tableId && targetGuests.length >= Number(targetTable?.capacity ?? 0)) {
+      setAssignmentError('')
+      setActiveGuestId(guestId)
+      setSwapTargetTableId(tableId)
+      return
+    }
+
+    setAssignmentSaving(true)
+    setAssignmentError('')
+    try {
+      await repository.assignGuestToTable(guestId, tableId)
+      setActiveGuestId(null)
+      setSwapTargetTableId(null)
+      setFocusedTableId(tableId ?? null)
+      await refresh()
+    } catch (caught) {
+      setActiveGuestId(guestId)
+      setAssignmentError(caught.message || 'Gosta nije moguće premjestiti. Pokušaj ponovno.')
+    } finally {
+      setAssignmentSaving(false)
+    }
+  }
+
+  async function swapGuest(otherGuestId) {
+    setAssignmentSaving(true)
+    setAssignmentError('')
+    try {
+      await repository.swapGuests(activeGuestId, otherGuestId)
+      const targetTableId = swapTargetTableId
+      setActiveGuestId(null)
+      setSwapTargetTableId(null)
+      setFocusedTableId(targetTableId)
+      await refresh()
+    } catch (caught) {
+      setAssignmentError(caught.message || 'Zamjenu nije moguće spremiti. Pokušaj ponovno.')
+    } finally {
+      setAssignmentSaving(false)
+    }
+  }
+
+  function openGuestAssignment(guestId) {
+    setAssignmentError('')
+    setSwapTargetTableId(null)
+    setActiveGuestId(guestId)
+  }
+
+  function closeGuestAssignment() {
+    setAssignmentError('')
+    setSwapTargetTableId(null)
     setActiveGuestId(null)
-    setFocusedTableId(tableId ?? null)
-    await refresh()
   }
 
   async function addGuests(names) {
@@ -157,7 +214,7 @@ export default function TablesPage() {
           onCloseFocus={() => setFocusedTableId(null)}
           onEditTable={setEditingTableId}
           onGuestPointerDown={startGuestDrag}
-          onGuestClick={setActiveGuestId}
+          onGuestClick={openGuestAssignment}
           onGuestDrop={assignGuest}
           draggingGuestId={draggingGuestId}
         />
@@ -214,7 +271,7 @@ export default function TablesPage() {
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault()
-                      setActiveGuestId(guest.id)
+                      openGuestAssignment(guest.id)
                     }
                   }}
                   className={`min-h-[44px] rounded-pill border border-dashed border-gold/70 bg-white px-3 py-2 text-left font-ui text-sm font-semibold text-charcoal transition-all ${draggingGuestId === guest.id ? 'scale-105 shadow-elevated' : ''}`}
@@ -229,50 +286,18 @@ export default function TablesPage() {
         )}
 
         <div className="mt-4 border-t border-cream pt-3">
-          <p className="font-ui text-xs font-semibold uppercase tracking-[0.14em] text-charcoal-soft">Pregled dodjele</p>
-          <div className="mt-2 space-y-3">
-            {tables.map((table) => {
-              const tableGuests = guestsByTable[table.id] ?? []
-              return (
-                <section key={`assignment-table-${table.id}`} className="rounded-md border border-cream bg-ivory/70 p-2">
-                  <div className="flex items-baseline justify-between gap-2 px-1">
-                    <h3 className="font-ui text-sm font-semibold text-charcoal">{table.name}</h3>
-                    <span className="font-ui text-[11px] text-charcoal-soft">{tableGuests.length}/{table.capacity} mjesta</span>
-                  </div>
-                  {tableGuests.length > 0 ? (
-                    <ol className="mt-2 grid grid-cols-2 gap-2">
-                      {tableGuests.map((guest, index) => (
-                        <li key={`assignment-${guest.id}`} className="flex min-h-[48px] min-w-0 items-center gap-2 rounded-md border border-cream bg-white/80 px-2 py-2">
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-gold font-ui text-xs font-bold text-white">{index + 1}</span>
-                          <span className="min-w-0 truncate font-ui text-sm font-semibold text-charcoal">{guest.name}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  ) : (
-                    <p className="px-1 pt-2 font-ui text-xs text-charcoal-soft">Nema dodijeljenih gostiju</p>
-                  )}
-                </section>
-              )
-            })}
-
-            {unassignedGuests.length > 0 && (
-              <section className="rounded-md border border-dashed border-gold/60 bg-cream/40 p-2">
-                <h3 className="px-1 font-ui text-sm font-semibold text-charcoal">Bez mjesta</h3>
-                <ol className="mt-2 grid grid-cols-2 gap-2">
-                  {unassignedGuests.map((guest, index) => (
-                    <li key={`assignment-unassigned-${guest.id}`} className="flex min-h-[48px] min-w-0 items-center gap-2 rounded-md border border-cream bg-white/80 px-2 py-2">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-charcoal-soft font-ui text-xs font-bold text-white">{index + 1}</span>
-                      <span className="min-w-0 truncate font-ui text-sm font-semibold text-charcoal">{guest.name}</span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="font-ui text-xs font-semibold uppercase tracking-[0.14em] text-charcoal-soft">Pregled dodjele</p>
+            <p className="font-ui text-[11px] text-charcoal-soft">Dodirni ime za promjenu</p>
           </div>
-          <p className="mt-3 flex items-center justify-between border-t border-cream pt-3 font-ui text-sm text-charcoal-soft">
-            <span>Ukupno gostiju</span>
-            <strong className="font-display text-xl text-charcoal">{guests.length}</strong>
-          </p>
+          <div className="mt-2">
+            <TableGuestList
+              tables={tables}
+              guestsByTable={guestsByTable}
+              unassignedGuests={unassignedGuests}
+              onGuestClick={openGuestAssignment}
+            />
+          </div>
         </div>
       </section>
 
@@ -292,13 +317,46 @@ export default function TablesPage() {
       />
 
       <TableSelectorSheet
-        open={activeGuestId != null}
-        onClose={() => setActiveGuestId(null)}
+        open={activeGuestId != null && swapTargetTableId == null}
+        onClose={closeGuestAssignment}
         tables={tables}
         onSelect={(tableId) => assignGuest(activeGuestId, tableId)}
         guestName={activeGuest?.name}
         assignedTableId={activeGuest?.tableId}
+        guestCountsByTable={guestCountsByTable}
+        busy={assignmentSaving}
+        error={assignmentError}
       />
+
+      <BottomSheet
+        open={swapTargetTableId != null}
+        onClose={closeGuestAssignment}
+        title="Zamijeni mjesto"
+        subtitle={activeGuest && swapTargetTable ? `${activeGuest.name} ide za ${swapTargetTable.name}` : undefined}
+      >
+        <p className="font-ui text-sm leading-relaxed text-charcoal-soft">
+          {activeGuestTable
+            ? `Stol je pun. Odaberi gosta koji prelazi za ${activeGuestTable.name}.`
+            : 'Stol je pun. Odaberi gosta koji će ostati bez dodijeljenog mjesta.'}
+        </p>
+        <ul className="mt-3 max-h-[46vh] space-y-2 overflow-y-auto">
+          {swapCandidates.map((guest) => (
+            <li key={`swap-${guest.id}`}>
+              <button
+                type="button"
+                onClick={() => swapGuest(guest.id)}
+                disabled={assignmentSaving}
+                className="flex min-h-[52px] w-full items-center justify-between rounded-md border border-cream bg-white px-3 text-left font-ui text-base font-semibold text-charcoal transition-colors hover:bg-cream disabled:pointer-events-none disabled:opacity-50"
+                aria-label={`Zamijeni s ${guest.name}`}
+              >
+                <span className="min-w-0 break-words">{guest.name}</span>
+                <span className="ml-3 shrink-0 font-ui text-xs font-semibold text-terracotta">Zamijeni</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        {assignmentError && <p role="alert" className="mt-3 font-ui text-sm font-semibold text-terracotta">{assignmentError}</p>}
+      </BottomSheet>
 
       <BottomSheet
         open={isGuestSheetOpen}
@@ -320,6 +378,10 @@ export default function TablesPage() {
               ))}
               <option value="">Bez dodijeljenog mjesta</option>
             </select>
+            <span className="mt-2 block font-ui text-xs font-normal leading-relaxed text-charcoal-soft">
+              Kad se odabrani stol napuni, preostali gosti automatski prelaze za sljedeći slobodan stol.
+              Ako su svi stolovi puni, ostat će u popisu Bez mjesta.
+            </span>
           </label>
         )}
         <GuestImportTextarea onImport={addGuests} />

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Heart, MapPinned } from 'lucide-react'
+import { ChevronDown, ChevronUp, Heart, MapPinned } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AppShell from '../components/layout/AppShell.jsx'
 import AccessModeSwitch from '../components/guestpage/AccessModeSwitch.jsx'
@@ -8,9 +8,11 @@ import SearchGuestCard from '../components/guestpage/SearchGuestCard.jsx'
 import TableResultCard from '../components/guestpage/TableResultCard.jsx'
 import ScheduleRow from '../components/guestpage/ScheduleRow.jsx'
 import TableMap from '../components/tables/TableMap.jsx'
+import TableGuestList from '../components/tables/TableGuestList.jsx'
 import EventGallery from '../components/gallery/EventGallery.jsx'
 import { useEventDraft } from '../context/EventDraftContext.jsx'
 import repository from '../data/repositoryInstance.js'
+import { pluralizeGostiNominative } from '../lib/plural.js'
 
 export default function PublicEventPage() {
   const { slug } = useParams()
@@ -23,6 +25,7 @@ export default function PublicEventPage() {
   const [foundName, setFoundName] = useState('')
   const [focusedTableId, setFocusedTableId] = useState(null)
   const [adminSheetOpen, setAdminSheetOpen] = useState(false)
+  const [guestListOpen, setGuestListOpen] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -79,6 +82,7 @@ export default function PublicEventPage() {
   }
 
   const { event, tables } = layout
+  const totalGuests = tables.reduce((total, table) => total + (table.guests?.length ?? 0), 0)
   const displayDate = new Intl.DateTimeFormat('hr-HR', { day: 'numeric', month: 'long', year: 'numeric' }).format(
     new Date(event.date)
   )
@@ -130,6 +134,32 @@ export default function PublicEventPage() {
             onCloseFocus={() => setFocusedTableId(null)}
             readOnly
           />
+        </div>
+
+        <div className="mt-3 overflow-hidden rounded-lg bg-white/85 shadow-card">
+          <button
+            type="button"
+            onClick={() => setGuestListOpen((open) => !open)}
+            className="flex min-h-[56px] w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-cream/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gold-deep"
+            aria-expanded={guestListOpen}
+            aria-controls="public-table-guest-list"
+          >
+            <span className="min-w-0">
+              <span className="block font-ui text-sm font-semibold text-charcoal">Popis gostiju po stolovima</span>
+              <span className="mt-0.5 block font-ui text-xs text-charcoal-soft">
+                {totalGuests} {pluralizeGostiNominative(totalGuests)}
+              </span>
+            </span>
+            {guestListOpen
+              ? <ChevronUp size={20} strokeWidth={1.7} className="shrink-0 text-gold-deep" aria-hidden="true" />
+              : <ChevronDown size={20} strokeWidth={1.7} className="shrink-0 text-gold-deep" aria-hidden="true" />}
+          </button>
+
+          {guestListOpen && (
+            <div id="public-table-guest-list" className="border-t border-cream px-3 pb-3 pt-3">
+              <TableGuestList tables={tables} guestsByTable={guestsByTable} />
+            </div>
+          )}
         </div>
       </section>
 

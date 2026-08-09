@@ -38,7 +38,7 @@ function guestOffset(index, total) {
 
 function OverviewGuestCard({ guest, table, highlighted, dragging, readOnly, onPointerDown, onClick, offset }) {
   const visual = (
-    <span className={`block max-w-[58px] break-words rounded-pill border px-2 py-1 text-center font-ui text-[9px] font-semibold leading-[1.1] shadow-card ${
+    <span className={`line-clamp-2 max-w-[58px] rounded-pill border px-2 py-1 text-center font-ui text-[9px] font-semibold leading-[1.1] shadow-card [overflow-wrap:normal] [word-break:normal] ${
       dragging
         ? 'border-gold bg-cream text-charcoal shadow-elevated'
         : highlighted

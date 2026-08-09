@@ -21,7 +21,7 @@ for (const query of VARIANTS) {
     await page.locator('#guest-list').fill('Ivan Gorupić')
     await page.getByRole('button', { name: /Dodaj 1 gosta/ }).click()
     await page.getByRole('button', { name: 'Dodaj stol' }).click()
-    await page.getByRole('button', { name: 'Ivan Gorupić' }).click()
+    await page.getByRole('button', { name: 'Ivan Gorupić', exact: true }).click()
     await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 1').click()
     await page.getByRole('button', { name: 'Nastavi na objavu' }).click()
     await page.getByRole('button', { name: 'Objavi stranicu' }).click()
