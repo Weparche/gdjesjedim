@@ -59,7 +59,7 @@ test('organizer edits a table and assigns a guest on the map', async ({ page }) 
   await dialog.getByRole('button', { name: 'Četvrtasti' }).click()
   await dialog.getByRole('button', { name: 'Zatvori' }).click()
 
-  await page.getByRole('button', { name: 'Ivan Gorupić' }).click()
+  await page.getByRole('button', { name: 'Ivan Gorupić', exact: true }).click()
   await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 1').click()
 
   await expect(page.getByRole('button', { name: '1. Ivan Gorupić, Stol 1' })).toBeVisible()
@@ -185,16 +185,16 @@ test('focused table switches to a scrollable two-column roster above ten guests'
 test('organizer can remove all unassigned guests at once', async ({ page }) => {
   await openTables(page)
 
-  await page.getByRole('button', { name: 'Ivan Gorupić' }).click()
+  await page.getByRole('button', { name: 'Ivan Gorupić', exact: true }).click()
   await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 1').click()
   await expect(page.getByRole('button', { name: '1. Ivan Gorupić, Stol 1' })).toBeVisible()
 
   await expect(page.getByText('Gosti bez mjesta')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Ana Gorupić' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ana Gorupić', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Ukloni sve bez mjesta' }).click()
 
   await expect(page.getByText('Gosti bez mjesta')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Ana Gorupić' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Ana Gorupić', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: '1. Ivan Gorupić, Stol 1' })).toBeVisible()
   await expect(page.getByText('Ukupno gostiju').locator('..').getByText('1')).toBeVisible()
 })

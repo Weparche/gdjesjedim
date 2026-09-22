@@ -272,7 +272,7 @@ export default function TablesPage() {
                             className="flex min-h-[48px] min-w-0 w-full items-center gap-2 rounded-md border border-cream bg-white/80 px-2 py-2 text-left transition-colors hover:bg-cream"
                           >
                             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-gold font-ui text-xs font-bold text-white" aria-hidden="true">{index + 1}</span>
-                            <span className="min-w-0 truncate font-ui text-sm font-semibold text-charcoal">{guest.name}</span>
+                            <span className="min-w-0 truncate font-ui text-sm font-semibold text-charcoal" aria-hidden="true">{guest.name}</span>
                           </button>
                         </li>
                       ))}
@@ -297,7 +297,7 @@ export default function TablesPage() {
                         className="flex min-h-[48px] min-w-0 w-full items-center gap-2 rounded-md border border-cream bg-white/80 px-2 py-2 text-left transition-colors hover:bg-cream"
                       >
                         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-charcoal-soft font-ui text-xs font-bold text-white" aria-hidden="true">{index + 1}</span>
-                        <span className="min-w-0 truncate font-ui text-sm font-semibold text-charcoal">{guest.name}</span>
+                        <span className="min-w-0 truncate font-ui text-sm font-semibold text-charcoal" aria-hidden="true">{guest.name}</span>
                       </button>
                     </li>
                   ))}
