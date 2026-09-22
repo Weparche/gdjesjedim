@@ -24,6 +24,7 @@ export default function TablesPage() {
   const [isGuestSheetOpen, setIsGuestSheetOpen] = useState(false)
   const [draggingGuestId, setDraggingGuestId] = useState(null)
   const dragRef = useRef({ id: null, x: 0, y: 0, moved: false })
+  const assignGuestRef = useRef(null)
 
   const refresh = useCallback(async () => {
     if (!draft.event) return
@@ -56,13 +57,14 @@ export default function TablesPage() {
     async function onPointerUp(event) {
       const current = dragRef.current
       if (!current.id) return
+      const guestId = current.id
+      const moved = current.moved
       dragRef.current = { id: null, x: 0, y: 0, moved: false }
       setDraggingGuestId(null)
+      if (!moved) return
       const dropTarget = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-table-drop-id]')
       if (dropTarget?.dataset.tableDropId) {
-        await assignGuest(current.id, dropTarget.dataset.tableDropId)
-      } else if (!current.moved) {
-        setActiveGuestId(current.id)
+        await assignGuestRef.current?.(guestId, dropTarget.dataset.tableDropId)
       }
     }
 
@@ -72,7 +74,7 @@ export default function TablesPage() {
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerup', onPointerUp)
     }
-  })
+  }, [])
 
   const guestsByTable = useMemo(
     () => tables.reduce((result, table) => ({ ...result, [table.id]: guests.filter((guest) => guest.tableId === table.id) }), {}),
@@ -96,6 +98,8 @@ export default function TablesPage() {
     setFocusedTableId(tableId ?? null)
     await refresh()
   }
+
+  assignGuestRef.current = assignGuest
 
   async function addGuests(names) {
     await repository.addGuests(draft.event.id, names)
@@ -129,8 +133,11 @@ export default function TablesPage() {
     await refresh()
   }
 
+  function openGuestSelector(guestId) {
+    setActiveGuestId(guestId)
+  }
+
   function startGuestDrag(event, guestId) {
-    event.preventDefault()
     dragRef.current = { id: guestId, x: event.clientX, y: event.clientY, moved: false }
   }
 
@@ -225,10 +232,11 @@ export default function TablesPage() {
                   key={guest.id}
                   type="button"
                   onPointerDown={(event) => startGuestDrag(event, guest.id)}
+                  onClick={() => openGuestSelector(guest.id)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault()
-                      setActiveGuestId(guest.id)
+                      openGuestSelector(guest.id)
                     }
                   }}
                   className={`min-h-[44px] rounded-pill border border-dashed border-gold/70 bg-white px-3 py-2 text-left font-ui text-sm font-semibold text-charcoal transition-all ${draggingGuestId === guest.id ? 'scale-105 shadow-elevated' : ''}`}
@@ -256,9 +264,15 @@ export default function TablesPage() {
                   {tableGuests.length > 0 ? (
                     <ol className="mt-2 grid grid-cols-2 gap-2">
                       {tableGuests.map((guest, index) => (
-                        <li key={`assignment-${guest.id}`} className="flex min-h-[48px] min-w-0 items-center gap-2 rounded-md border border-cream bg-white/80 px-2 py-2">
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-gold font-ui text-xs font-bold text-white">{index + 1}</span>
-                          <span className="min-w-0 truncate font-ui text-sm font-semibold text-charcoal">{guest.name}</span>
+                        <li key={`assignment-${guest.id}`}>
+                          <button
+                            type="button"
+                            onClick={() => openGuestSelector(guest.id)}
+                            className="flex min-h-[48px] min-w-0 w-full items-center gap-2 rounded-md border border-cream bg-white/80 px-2 py-2 text-left transition-colors hover:bg-cream"
+                          >
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-gold font-ui text-xs font-bold text-white">{index + 1}</span>
+                            <span className="min-w-0 truncate font-ui text-sm font-semibold text-charcoal">{guest.name}</span>
+                          </button>
                         </li>
                       ))}
                     </ol>
@@ -274,9 +288,15 @@ export default function TablesPage() {
                 <h3 className="px-1 font-ui text-sm font-semibold text-charcoal">Bez mjesta</h3>
                 <ol className="mt-2 grid grid-cols-2 gap-2">
                   {unassignedGuests.map((guest, index) => (
-                    <li key={`assignment-unassigned-${guest.id}`} className="flex min-h-[48px] min-w-0 items-center gap-2 rounded-md border border-cream bg-white/80 px-2 py-2">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-charcoal-soft font-ui text-xs font-bold text-white">{index + 1}</span>
-                      <span className="min-w-0 truncate font-ui text-sm font-semibold text-charcoal">{guest.name}</span>
+                    <li key={`assignment-unassigned-${guest.id}`}>
+                      <button
+                        type="button"
+                        onClick={() => openGuestSelector(guest.id)}
+                        className="flex min-h-[48px] min-w-0 w-full items-center gap-2 rounded-md border border-cream bg-white/80 px-2 py-2 text-left transition-colors hover:bg-cream"
+                      >
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-charcoal-soft font-ui text-xs font-bold text-white">{index + 1}</span>
+                        <span className="min-w-0 truncate font-ui text-sm font-semibold text-charcoal">{guest.name}</span>
+                      </button>
                     </li>
                   ))}
                 </ol>

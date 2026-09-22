@@ -79,7 +79,6 @@ function OverviewGuestCard({ guest, table, highlighted, dragging, readOnly, onPo
       className="absolute z-10 flex h-11 w-20 touch-none items-center justify-center"
       style={positionStyle}
       onPointerDown={(event) => {
-        event.preventDefault()
         event.stopPropagation()
         onPointerDown?.(event, guest.id)
       }}
