@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Heart, MapPinned } from 'lucide-react'
+import { Heart, MapPin, MapPinned } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AppShell from '../components/layout/AppShell.jsx'
 import AccessModeSwitch from '../components/guestpage/AccessModeSwitch.jsx'
@@ -11,6 +11,7 @@ import TableMap from '../components/tables/TableMap.jsx'
 import SeatingAssignmentOverview from '../components/tables/SeatingAssignmentOverview.jsx'
 import EventGallery from '../components/gallery/EventGallery.jsx'
 import { useEventDraft } from '../context/EventDraftContext.jsx'
+import { getPublicEventExtras } from '../data/publicEventExtras.js'
 import repository from '../data/repositoryInstance.js'
 
 export default function PublicEventPage() {
@@ -57,6 +58,8 @@ export default function PublicEventPage() {
   }
 
   const { event, tables, unassignedGuests = [] } = layout
+  const { parking } = getPublicEventExtras(slug)
+  const showScheduleSection = scheduleItems.length > 0 || Boolean(parking)
   const displayDate = new Intl.DateTimeFormat('hr-HR', { day: 'numeric', month: 'long', year: 'numeric' }).format(
     new Date(event.date)
   )
@@ -82,6 +85,33 @@ export default function PublicEventPage() {
       <div className="mt-7">
         <EventGallery slug={slug} />
       </div>
+
+      {showScheduleSection && (
+        <section className="mt-8" aria-labelledby="public-schedule-title">
+          <h2 id="public-schedule-title" className="font-display text-2xl text-charcoal">Raspored događaja</h2>
+          <div className="mt-2 overflow-hidden rounded-lg bg-white shadow-card">
+            {scheduleItems.length > 0 && (
+              <ul className="px-4">
+                {scheduleItems.map((item) => <ScheduleRow key={item.id} {...item} />)}
+              </ul>
+            )}
+            {parking && (
+              <div className={`flex items-center justify-between px-4 py-3 ${scheduleItems.length > 0 ? 'border-t border-cream' : ''}`}>
+                <p className="font-ui text-base font-semibold text-charcoal">{parking.label}</p>
+                <a
+                  href={parking.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Otvori ${parking.label} na karti`}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-gold-deep hover:bg-cream"
+                >
+                  <MapPin size={20} strokeWidth={1.5} aria-hidden="true" />
+                </a>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Sekcija „Gdje sjedim?” (pretraga stola) privremeno isključena
       <div className="mt-8">
@@ -123,15 +153,6 @@ export default function PublicEventPage() {
           <TableResultCard tableName={result.table.name} />
         </div>
       )} */}
-
-      {scheduleItems.length > 0 && (
-        <div className="mt-6">
-          <p className="font-ui text-sm font-semibold text-charcoal-soft">Raspored događaja</p>
-          <ul className="mt-2 rounded-lg bg-white px-4 shadow-card">
-            {scheduleItems.map((item) => <ScheduleRow key={item.id} {...item} />)}
-          </ul>
-        </div>
-      )}
 
       <p className="mt-10 flex items-center justify-center gap-1.5 font-ui text-sm text-charcoal-soft">
         <Heart size={14} strokeWidth={1.5} className="text-blush" aria-hidden="true" />
