@@ -83,13 +83,15 @@ test('mobile map supports zoom controls and drag-to-pan', async ({ page }) => {
   await expect(map).toHaveAttribute('data-zoom', '0.9')
 
   const box = await map.boundingBox()
-  await page.mouse.move(box.x + box.width - 28, box.y + box.height * 0.52)
-  await page.mouse.down()
-  await page.mouse.move(box.x + box.width - 88, box.y + box.height * 0.62, { steps: 5 })
-  await page.mouse.up()
+  await map.dispatchEvent('pointerdown', { pointerId: 51, pointerType: 'touch', button: 0, clientX: box.x + box.width - 88, clientY: box.y + box.height * 0.52 })
+  await map.dispatchEvent('pointerdown', { pointerId: 52, pointerType: 'touch', button: 0, clientX: box.x + box.width - 28, clientY: box.y + box.height * 0.52 })
+  await map.dispatchEvent('pointermove', { pointerId: 51, pointerType: 'touch', button: 0, clientX: box.x + box.width - 148, clientY: box.y + box.height * 0.62 })
+  await map.dispatchEvent('pointermove', { pointerId: 52, pointerType: 'touch', button: 0, clientX: box.x + box.width - 88, clientY: box.y + box.height * 0.62 })
 
   await expect(map).not.toHaveAttribute('data-pan-x', '0')
   await expect(map).not.toHaveAttribute('data-pan-y', '0')
+  await map.dispatchEvent('pointerup', { pointerId: 51, pointerType: 'touch', button: 0, clientX: box.x + box.width - 148, clientY: box.y + box.height * 0.62 })
+  await map.dispatchEvent('pointerup', { pointerId: 52, pointerType: 'touch', button: 0, clientX: box.x + box.width - 88, clientY: box.y + box.height * 0.62 })
 
   const zoomBeforePinch = Number(await map.getAttribute('data-zoom'))
   await map.dispatchEvent('pointerdown', { pointerId: 41, pointerType: 'touch', button: 0, clientX: box.x + 110, clientY: box.y + 210 })

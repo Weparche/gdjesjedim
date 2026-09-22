@@ -113,7 +113,7 @@ export default function TableMap({
   const pointerCacheRef = useRef(new Map())
   const pinchRef = useRef(null)
   const [draggingTable, setDraggingTable] = useState(null)
-  const [panGesture, setPanGesture] = useState(null)
+  const [multiTouchPan, setMultiTouchPan] = useState(false)
   const [view, setView] = useState({ zoom: FIT_ZOOM, x: 0, y: 0 })
   const focusedTable = tables.find((table) => table.id === focusedTableId)
 
@@ -185,11 +185,6 @@ export default function TableMap({
       // Synthetic pointer events used in tests do not own real pointer capture.
     }
 
-    if (pointers.size === 1) {
-      setPanGesture({ pointerId: event.pointerId, x: event.clientX, y: event.clientY, originX: view.x, originY: view.y })
-      return
-    }
-
     if (pointers.size === 2) {
       const rect = mapRef.current?.getBoundingClientRect()
       if (!rect) return
@@ -201,7 +196,7 @@ export default function TableMap({
         x: view.x,
         y: view.y
       }
-      setPanGesture(null)
+      setMultiTouchPan(true)
     }
   }
 
@@ -237,15 +232,6 @@ export default function TableMap({
       return
     }
 
-    if (panGesture?.pointerId === event.pointerId) {
-      const next = clampPan(
-        panGesture.originX + event.clientX - panGesture.x,
-        panGesture.originY + event.clientY - panGesture.y
-      )
-      setView((current) => ({ ...current, ...next }))
-      return
-    }
-
     if (!draggingTable) return
     const nextPosition = positionFromEvent(event)
     setDraggingTable((current) => ({ ...current, moved: true, position: nextPosition }))
@@ -258,16 +244,10 @@ export default function TableMap({
       if (pinchRef.current) {
         pinchRef.current = null
         pointers.clear()
-        setPanGesture(null)
+        setMultiTouchPan(false)
         event.stopPropagation()
         return
       }
-    }
-
-    if (panGesture?.pointerId === event.pointerId) {
-      setPanGesture(null)
-      event.stopPropagation()
-      return
     }
 
     if (!draggingTable) {
@@ -302,7 +282,7 @@ export default function TableMap({
       data-zoom={view.zoom}
       data-pan-x={Math.round(view.x)}
       data-pan-y={Math.round(view.y)}
-      className={`relative min-h-[518px] overflow-hidden rounded-lg border border-cream bg-cover bg-center shadow-inner ${panGesture ? 'cursor-grabbing' : 'cursor-grab'}`}
+      className={`relative min-h-[518px] overflow-hidden rounded-lg border border-cream bg-cover bg-center shadow-inner ${multiTouchPan ? 'cursor-grabbing' : 'cursor-grab'}`}
       style={{ backgroundImage: "url('/assets/seating-paper-bg.png')", touchAction: focusedTable ? 'auto' : 'none' }}
       onPointerDown={startPanning}
       onPointerMove={moveInteraction}
