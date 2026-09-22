@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { Camera, ChevronLeft, ChevronRight, ImagePlus, Images, LoaderCircle, Trash2, X } from 'lucide-react'
-import { getEventAdminToken } from '../../data/apiRepository.js'
 import galleryRepository from '../../data/galleryRepository.js'
 
 function GalleryButton({ icon: Icon, children, onClick, disabled }) {
@@ -76,7 +75,6 @@ export default function EventGallery({ slug, eventId }) {
   const [error, setError] = useState('')
   const [viewerIndex, setViewerIndex] = useState(null)
   const [deletingPhotoId, setDeletingPhotoId] = useState(null)
-  const [deletingAll, setDeletingAll] = useState(false)
   const cameraInput = useRef(null)
   const galleryInput = useRef(null)
 
@@ -144,22 +142,7 @@ export default function EventGallery({ slug, eventId }) {
     }
   }
 
-  const isEventAdmin = Boolean(eventId && getEventAdminToken(typeof window !== 'undefined' ? window.localStorage : undefined, eventId))
-
-  async function handleDeleteAllPhotos() {
-    if (!window.confirm(`Obrisati svih ${photos.length} fotografija iz galerije? Ova radnja se ne može poništiti.`)) return
-    setError('')
-    setDeletingAll(true)
-    try {
-      await galleryRepository.deleteAllPhotos(slug, eventId)
-      setPhotos([])
-      setViewerIndex(null)
-    } catch (caught) {
-      setError(caught.message || 'Galeriju nije moguće obrisati.')
-    } finally {
-      setDeletingAll(false)
-    }
-  }
+  // Bulk „Obriši sve (admin)” privremeno isključeno — brisanje ostaje po slici u pregledniku.
 
   return (
     <section aria-labelledby="gallery-title">
@@ -168,23 +151,14 @@ export default function EventGallery({ slug, eventId }) {
           <p className="font-ui text-xs font-semibold uppercase tracking-[0.18em] text-gold-deep">Zajedničke uspomene</p>
           <h2 id="gallery-title" className="mt-1 font-display text-2xl text-charcoal">Galerija</h2>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          {photos.length > 0 && (
-            <span className="font-ui text-xs text-charcoal-soft">
-              {photos.length} {photos.length === 1 ? 'fotografija' : photos.length < 5 ? 'fotografije' : 'fotografija'}
-            </span>
-          )}
-          {isEventAdmin && photos.length > 0 && (
-            <button
-              type="button"
-              onClick={handleDeleteAllPhotos}
-              disabled={deletingAll || uploading > 0}
-              className="font-ui text-xs font-semibold text-terracotta underline-offset-2 hover:underline disabled:opacity-50"
-            >
-              {deletingAll ? 'Brišem…' : 'Obriši sve (admin)'}
-            </button>
-          )}
-        </div>
+        {photos.length > 0 && (
+          <span className="pb-1 font-ui text-xs text-charcoal-soft">
+            {photos.length} {photos.length === 1 ? 'fotografija' : photos.length < 5 ? 'fotografije' : 'fotografija'}
+          </span>
+        )}
+        {/* {isEventAdmin && photos.length > 0 && (
+          <button type="button" onClick={handleDeleteAllPhotos}>Obriši sve (admin)</button>
+        )} */}
       </div>
 
       <div className="mt-3 flex gap-2">
