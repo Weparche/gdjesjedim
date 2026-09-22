@@ -11,6 +11,11 @@ function readTokens(storage) {
   }
 }
 
+export function getEventAdminToken(storage, eventId) {
+  if (!storage || !eventId) return undefined
+  return readTokens(storage)[eventId]
+}
+
 function writeToken(storage, eventId, token) {
   if (!storage || !eventId || !token) return
   const tokens = readTokens(storage)
