@@ -83,7 +83,7 @@ export default function PublicEventPage() {
       </div>
 
       <div className="mt-7">
-        <EventGallery slug={slug} />
+        <EventGallery slug={slug} eventId={event.id} />
       </div>
 
       {showScheduleSection && (
