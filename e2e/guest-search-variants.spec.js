@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 const VARIANTS = ['ivan gorupić', 'IVAN GORUPIĆ', 'Ivan']
 
 for (const query of VARIANTS) {
-  test(`guest search tolerates "${query}"`, async ({ page }) => {
+  test.skip(`guest search tolerates "${query}"`, async ({ page }) => {
     // Reuses the event published by happy-path.spec.js in the same localStorage-backed
     // dev server instance. Playwright's default storageState is shared per browser context
     // within a single run only when tests execute against the same origin/session; to keep

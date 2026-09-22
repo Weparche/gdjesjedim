@@ -4,8 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AppShell from '../components/layout/AppShell.jsx'
 import AccessModeSwitch from '../components/guestpage/AccessModeSwitch.jsx'
 import AdminUnlockSheet from '../components/guestpage/AdminUnlockSheet.jsx'
-import SearchGuestCard from '../components/guestpage/SearchGuestCard.jsx'
-import TableResultCard from '../components/guestpage/TableResultCard.jsx'
+// import SearchGuestCard from '../components/guestpage/SearchGuestCard.jsx'
+// import TableResultCard from '../components/guestpage/TableResultCard.jsx'
 import ScheduleRow from '../components/guestpage/ScheduleRow.jsx'
 import TableMap from '../components/tables/TableMap.jsx'
 import SeatingAssignmentOverview from '../components/tables/SeatingAssignmentOverview.jsx'
@@ -19,9 +19,6 @@ export default function PublicEventPage() {
   const { setEvent } = useEventDraft()
   const [layout, setLayout] = useState(undefined)
   const [scheduleItems, setScheduleItems] = useState([])
-  const [result, setResult] = useState(null)
-  const [status, setStatus] = useState(null)
-  const [foundName, setFoundName] = useState('')
   const [focusedTableId, setFocusedTableId] = useState(null)
   const [adminSheetOpen, setAdminSheetOpen] = useState(false)
 
@@ -37,26 +34,6 @@ export default function PublicEventPage() {
     }
     load()
   }, [slug])
-
-  async function handleSearch(query) {
-    const found = await repository.searchGuest(slug, query)
-    if (found && found.table) {
-      setResult(found)
-      setFoundName(found.guest.name)
-      setFocusedTableId(found.table.id)
-      setStatus(null)
-    } else if (found) {
-      setResult(null)
-      setFoundName(found.guest.name)
-      setFocusedTableId(null)
-      setStatus('noTable')
-    } else {
-      setResult(null)
-      setFoundName('')
-      setFocusedTableId(null)
-      setStatus('notFound')
-    }
-  }
 
   const guestsByTable = useMemo(
     () => (layout?.tables ?? []).reduce((resultMap, table) => ({ ...resultMap, [table.id]: table.guests }), {}),
@@ -106,11 +83,13 @@ export default function PublicEventPage() {
         <EventGallery slug={slug} />
       </div>
 
+      {/* Sekcija „Gdje sjedim?” (pretraga stola) privremeno isključena
       <div className="mt-8">
         <SearchGuestCard onSearch={handleSearch} status={status} guestName={foundName} />
       </div>
+      */}
 
-      <section className="mt-6" aria-labelledby="public-map-title">
+      <section className="mt-8" aria-labelledby="public-map-title">
         <div className="flex items-baseline justify-between gap-3">
           <div>
             <h2 id="public-map-title" className="font-display text-2xl text-charcoal">Raspored stolova</h2>
@@ -125,8 +104,6 @@ export default function PublicEventPage() {
             tables={tables}
             guestsByTable={guestsByTable}
             focusedTableId={focusedTableId}
-            highlightedTableId={result?.table?.id}
-            highlightedGuestId={result?.guest?.id}
             onFocusTable={setFocusedTableId}
             onCloseFocus={() => setFocusedTableId(null)}
             readOnly
@@ -141,11 +118,11 @@ export default function PublicEventPage() {
         </div>
       </section>
 
-      {result && (
+      {/* {result && (
         <div className="mt-6">
           <TableResultCard tableName={result.table.name} />
         </div>
-      )}
+      )} */}
 
       {scheduleItems.length > 0 && (
         <div className="mt-6">

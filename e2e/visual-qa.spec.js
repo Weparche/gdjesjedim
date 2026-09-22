@@ -81,9 +81,8 @@ test('capture all 9 primary screens', async ({ page }) => {
   await settle(page)
   await page.screenshot({ path: `${outDir}/08-admin-unlock.png` })
   await page.getByRole('dialog', { name: 'Admin pristup' }).getByLabel('Zatvori').click()
-  await page.getByLabel('Upiši svoje ime').fill('Ivan Gorupić')
-  await page.getByRole('button', { name: 'Pronađi moj stol' }).click()
-  await page.getByText('STOL 3', { exact: true }).waitFor()
+  await page.getByRole('button', { name: /Stol 3,/ }).click()
+  await page.getByRole('region', { name: 'Detalji za Stol 3' }).waitFor()
   await page.waitForTimeout(400) // let the 0.3s framer-motion fade-in settle before capture
   await settle(page)
   await page.screenshot({ path: `${outDir}/09-guest-result.png` })

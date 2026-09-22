@@ -27,14 +27,14 @@ async function publishMarijinoKrstenje(page) {
   await page.getByRole('button', { name: 'Dodaj goste' }).click()
   await page.locator('#guest-list').fill('Ivan Gorupić\nAna Gorupić\nMarko Horvat\nIvana Horvat\nPetar Marić')
   await page.getByRole('button', { name: /Dodaj 5 gostiju/ }).click()
-  await expect(page.getByRole('button', { name: 'Ivan Gorupić' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ivan Gorupić', exact: true })).toBeVisible()
   await expect(page.getByText('Pregled dodjele')).toBeVisible()
   await expect(page.locator('ol li').filter({ hasText: 'Ivan Gorupić' })).toHaveCount(1)
   await expect(page.getByText('Ukupno gostiju')).toBeVisible()
   for (let i = 0; i < 3; i++) {
     await page.getByRole('button', { name: 'Dodaj stol' }).click()
   }
-  await page.getByRole('button', { name: 'Ivan Gorupić' }).click()
+  await page.getByRole('button', { name: 'Ivan Gorupić', exact: true }).click()
   await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 3').click()
   const tableThreeReview = page.getByRole('heading', { name: 'Stol 3', exact: true }).locator('..').locator('..')
   await expect(tableThreeReview.getByText('Ivan Gorupić')).toBeVisible()
@@ -57,21 +57,19 @@ test('organizer happy path: create event, assign table, publish, guest finds tab
   await expect(page.locator('[data-table-drop-id]')).toHaveCount(3)
 
   const galleryTitle = page.getByRole('heading', { name: 'Galerija' })
-  const searchTitle = page.getByRole('heading', { name: 'Gdje sjedim?' })
+  const mapTitle = page.getByRole('heading', { name: 'Raspored stolova' })
   await expect(galleryTitle).toBeVisible()
-  expect((await galleryTitle.boundingBox()).y).toBeLessThan((await searchTitle.boundingBox()).y)
+  expect((await galleryTitle.boundingBox()).y).toBeLessThan((await mapTitle.boundingBox()).y)
   await page.getByLabel('Dodaj fotografije iz galerije').setInputFiles({ name: 'trenutak.png', mimeType: 'image/png', buffer: INVITE_PNG })
   await expect(page.getByRole('button', { name: 'Otvori fotografiju 1' })).toBeVisible()
   await page.getByRole('button', { name: 'Otvori fotografiju 1' }).click()
   await expect(page.getByRole('dialog', { name: 'Pregled fotografije' })).toBeVisible()
   await page.getByRole('button', { name: 'Zatvori fotografiju' }).click()
 
-  await page.getByLabel('Upiši svoje ime').fill('Ivan Gorupić')
-  await page.getByRole('button', { name: 'Pronađi moj stol' }).click()
+  await page.getByRole('button', { name: /Stol 3,/ }).click()
 
   await expect(page.getByRole('region', { name: 'Detalji za Stol 3' })).toBeVisible()
   await expect(page.getByLabel('1. Ivan Gorupić, Stol 3')).toBeVisible()
-  await expect(page.getByText('STOL 3', { exact: true })).toBeVisible()
 })
 
 test('public invitation protects admin mode with the Mari password', async ({ page }) => {
