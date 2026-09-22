@@ -174,16 +174,28 @@ export default function EventGallery({ slug }) {
       {loading ? (
         <div className="mt-3 aspect-[4/3] animate-pulse rounded-lg bg-cream" aria-label="Učitavanje galerije" />
       ) : photos.length > 0 ? (
-        <div className="gallery-grid mt-3 overflow-hidden rounded-lg bg-cream" aria-label="Fotografije s događaja">
+        <div
+          className={`gallery-grid mt-3 overflow-hidden rounded-lg bg-cream ${photos.length === 1 ? 'gallery-grid-single' : ''}`}
+          aria-label="Fotografije s događaja"
+        >
           {photos.map((photo, index) => (
             <button
               key={photo.id}
               type="button"
               onClick={() => setViewerIndex(index)}
-              className={`gallery-photo relative min-h-20 overflow-hidden bg-cream ${index === 0 ? 'gallery-photo-featured' : ''}`}
+              className={`gallery-photo relative overflow-hidden bg-cream ${
+                photos.length === 1 ? 'gallery-photo-single' : `min-h-20 ${index === 0 ? 'gallery-photo-featured' : ''}`
+              }`}
               aria-label={`Otvori fotografiju ${index + 1}`}
             >
-              <img src={photo.thumbnailUrl} alt="" loading={index > 2 ? 'lazy' : 'eager'} className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.03]" />
+              <img
+                src={photo.thumbnailUrl}
+                alt=""
+                loading={index > 2 ? 'lazy' : 'eager'}
+                className={`w-full transition-transform duration-300 hover:scale-[1.03] ${
+                  photos.length === 1 ? 'h-auto object-contain' : 'h-full object-cover'
+                }`}
+              />
             </button>
           ))}
         </div>

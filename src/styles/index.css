@@ -73,7 +73,19 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   grid-row: span 2;
 }
 
-.gallery-grid > :only-child {
-  grid-column: 1 / -1;
-  grid-row: span 3;
+.gallery-grid-single {
+  display: block;
+}
+
+.gallery-grid-single .gallery-photo-single {
+  width: 100%;
+  min-height: 0;
+}
+
+.gallery-grid-single .gallery-photo-single img {
+  width: 100%;
+  height: auto;
+  max-height: min(72vh, 560px);
+  object-fit: contain;
+  object-position: center;
 }
