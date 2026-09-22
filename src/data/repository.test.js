@@ -99,6 +99,34 @@ test('removeGuest deletes the guest', async () => {
   assert.equal(remaining.length, 0)
 })
 
+test('removeUnassignedGuests deletes only guests without a table', async () => {
+  const repo = freshRepo()
+  const event = await repo.createEvent({ title: 'Krštenje', type: 'christening', date: '2026-09-26' })
+  const [ivan, ana, marko] = await repo.addGuests(event.id, ['Ivan Gorupić', 'Ana Gorupić', 'Marko Horvat'])
+  const [table] = await repo.addTables(event.id, [{ name: 'Stol 1', capacity: 8 }])
+  await repo.assignGuestToTable(ivan.id, table.id)
+
+  const result = await repo.removeUnassignedGuests(event.id)
+  assert.equal(result.removed, 2)
+
+  const remaining = await repo.getGuests(event.id)
+  assert.equal(remaining.length, 1)
+  assert.equal(remaining[0].id, ivan.id)
+  assert.ok(!remaining.some((guest) => guest.id === ana.id || guest.id === marko.id))
+})
+
+test('removeUnassignedGuests is a no-op when everyone is seated', async () => {
+  const repo = freshRepo()
+  const event = await repo.createEvent({ title: 'Krštenje', type: 'christening', date: '2026-09-26' })
+  const [guest] = await repo.addGuests(event.id, ['Ivan Gorupić'])
+  const [table] = await repo.addTables(event.id, [{ name: 'Stol 1', capacity: 8 }])
+  await repo.assignGuestToTable(guest.id, table.id)
+
+  const result = await repo.removeUnassignedGuests(event.id)
+  assert.equal(result.removed, 0)
+  assert.equal((await repo.getGuests(event.id)).length, 1)
+})
+
 test('searchGuest tolerates case, diacritics, and partial name', async () => {
   const repo = freshRepo()
   const event = await repo.createEvent({ title: 'Krštenje', type: 'christening', date: '2026-09-26' })

@@ -181,3 +181,20 @@ test('focused table switches to a scrollable two-column roster above ten guests'
   await expect(page.getByRole('button', { name: '11. Gost 11, Stol 1' })).toBeVisible()
   await expect(focus.getByText('11/12 mjesta').first()).toBeVisible()
 })
+
+test('organizer can remove all unassigned guests at once', async ({ page }) => {
+  await openTables(page)
+
+  await page.getByRole('button', { name: 'Ivan Gorupić' }).click()
+  await page.getByRole('dialog', { name: 'Odaberi stol' }).getByText('Stol 1').click()
+  await expect(page.getByRole('button', { name: '1. Ivan Gorupić, Stol 1' })).toBeVisible()
+
+  await expect(page.getByText('Gosti bez mjesta')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ana Gorupić' })).toBeVisible()
+  await page.getByRole('button', { name: 'Ukloni sve bez mjesta' }).click()
+
+  await expect(page.getByText('Gosti bez mjesta')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Ana Gorupić' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '1. Ivan Gorupić, Stol 1' })).toBeVisible()
+  await expect(page.getByText('Ukupno gostiju').locator('..').getByText('1')).toBeVisible()
+})

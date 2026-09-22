@@ -181,6 +181,14 @@ export function createLocalRepository(storage) {
       })
     },
 
+    async removeUnassignedGuests(eventId) {
+      return withDb((db) => {
+        const before = db.guests.length
+        db.guests = db.guests.filter((guest) => guest.eventId !== eventId || guest.tableId != null)
+        return { removed: before - db.guests.length }
+      })
+    },
+
     async assignGuestToTable(guestId, tableId) {
       return withDb((db) => {
         const guest = db.guests.find((g) => g.id === guestId)

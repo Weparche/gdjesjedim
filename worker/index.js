@@ -274,6 +274,18 @@ async function handleTables(request, env, url) {
 }
 
 async function handleGuests(request, env, url) {
+  const unassignedMatch = url.pathname.match(/^\/api\/events\/([^/]+)\/guests\/unassigned$/)
+  if (unassignedMatch && request.method === 'DELETE') {
+    const eventId = decodeURIComponent(unassignedMatch[1])
+    const event = await eventRowById(env, eventId)
+    if (!event) return error('Događaj nije pronađen.', 404)
+    if (!(await requireEventAdmin(request, env, eventId))) return error('Nedopušten pristup.', 401)
+    const result = await env.DB.prepare(
+      'DELETE FROM guests WHERE event_id = ?1 AND table_id IS NULL'
+    ).bind(eventId).run()
+    return json({ removed: result.meta?.changes ?? 0 })
+  }
+
   const collectionMatch = url.pathname.match(/^\/api\/events\/([^/]+)\/guests$/)
   if (collectionMatch) {
     const eventId = decodeURIComponent(collectionMatch[1])

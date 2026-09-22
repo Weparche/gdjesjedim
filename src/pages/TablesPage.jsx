@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Plus, MousePointer2, Users } from 'lucide-react'
+import { Plus, MousePointer2, Trash2, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import AppShell from '../components/layout/AppShell.jsx'
 import PageHeader from '../components/layout/PageHeader.jsx'
@@ -103,6 +103,15 @@ export default function TablesPage() {
     await refresh()
   }
 
+  async function removeUnassignedGuests() {
+    if (unassignedGuests.length === 0) return
+    await repository.removeUnassignedGuests(draft.event.id)
+    if (activeGuestId && unassignedGuests.some((guest) => guest.id === activeGuestId)) {
+      setActiveGuestId(null)
+    }
+    await refresh()
+  }
+
   async function updateTable(patch) {
     await repository.updateTable(editingTableId, patch)
     await refresh()
@@ -195,9 +204,19 @@ export default function TablesPage() {
 
         {unassignedGuests.length > 0 && (
           <div className="mt-4 rounded-md bg-cream/60 p-3">
-            <div className="flex items-baseline justify-between gap-3">
-              <p className="font-ui text-sm font-semibold text-charcoal">Gosti bez mjesta</p>
-              <span className="font-ui text-xs text-charcoal-soft">{unassignedGuests.length}</span>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-baseline gap-3">
+                <p className="font-ui text-sm font-semibold text-charcoal">Gosti bez mjesta</p>
+                <span className="font-ui text-xs text-charcoal-soft">{unassignedGuests.length}</span>
+              </div>
+              <button
+                type="button"
+                onClick={removeUnassignedGuests}
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-pill border border-terracotta/40 px-3 font-ui text-sm font-semibold text-terracotta transition-colors hover:bg-white"
+              >
+                <Trash2 size={16} strokeWidth={1.5} aria-hidden="true" />
+                Ukloni sve bez mjesta
+              </button>
             </div>
             <p className="mt-1 font-ui text-xs text-charcoal-soft">Povuci ime na stol ili ga dodirni za izbor.</p>
             <div className="mt-3 flex flex-wrap gap-2">
