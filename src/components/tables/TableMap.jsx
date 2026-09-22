@@ -177,15 +177,15 @@ export default function TableMap({
       || (!alreadyTracking && event.target.closest?.('[data-map-interactive], [data-table-drop-id]'))
     ) return
 
-    event.preventDefault()
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
-    try {
-      event.currentTarget.setPointerCapture?.(event.pointerId)
-    } catch {
-      // Synthetic pointer events used in tests do not own real pointer capture.
-    }
 
     if (pointers.size === 2) {
+      event.preventDefault()
+      try {
+        event.currentTarget.setPointerCapture?.(event.pointerId)
+      } catch {
+        // Synthetic pointer events used in tests do not own real pointer capture.
+      }
       const rect = mapRef.current?.getBoundingClientRect()
       if (!rect) return
       const [first, second] = [...pointers.values()]
@@ -219,6 +219,7 @@ export default function TableMap({
     }
 
     if (pointers.size >= 2 && pinchRef.current) {
+      event.preventDefault()
       const rect = mapRef.current?.getBoundingClientRect()
       if (!rect) return
       const [first, second] = [...pointers.values()]
@@ -282,8 +283,11 @@ export default function TableMap({
       data-zoom={view.zoom}
       data-pan-x={Math.round(view.x)}
       data-pan-y={Math.round(view.y)}
-      className={`relative min-h-[518px] overflow-hidden rounded-lg border border-cream bg-cover bg-center shadow-inner ${multiTouchPan ? 'cursor-grabbing' : 'cursor-grab'}`}
-      style={{ backgroundImage: "url('/assets/seating-paper-bg.png')", touchAction: focusedTable ? 'auto' : 'none' }}
+      className={`relative min-h-[518px] overflow-hidden rounded-lg border border-cream bg-cover bg-center shadow-inner ${multiTouchPan ? 'cursor-grabbing' : ''}`}
+      style={{
+        backgroundImage: "url('/assets/seating-paper-bg.png')",
+        touchAction: focusedTable ? 'auto' : multiTouchPan ? 'none' : 'pan-y'
+      }}
       onPointerDown={startPanning}
       onPointerMove={moveInteraction}
       onPointerUp={finishInteraction}
@@ -294,6 +298,11 @@ export default function TableMap({
       <p className="pointer-events-none absolute left-4 top-4 z-10 font-ui text-[11px] font-semibold uppercase tracking-[0.16em] text-gold-deep">
         Mapa prostora
       </p>
+      {!focusedTable && (
+        <p className="pointer-events-none absolute right-4 top-4 z-10 max-w-[9.5rem] text-right font-ui text-[10px] leading-snug text-charcoal-soft/90">
+          Pomicanje mape: dva prsta. Jednim prstom listaj stranicu.
+        </p>
+      )}
 
       <div
         data-map-canvas
