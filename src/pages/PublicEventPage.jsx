@@ -8,6 +8,7 @@ import SearchGuestCard from '../components/guestpage/SearchGuestCard.jsx'
 import TableResultCard from '../components/guestpage/TableResultCard.jsx'
 import ScheduleRow from '../components/guestpage/ScheduleRow.jsx'
 import TableMap from '../components/tables/TableMap.jsx'
+import SeatingAssignmentOverview from '../components/tables/SeatingAssignmentOverview.jsx'
 import EventGallery from '../components/gallery/EventGallery.jsx'
 import { useEventDraft } from '../context/EventDraftContext.jsx'
 import repository from '../data/repositoryInstance.js'
@@ -78,7 +79,7 @@ export default function PublicEventPage() {
     )
   }
 
-  const { event, tables } = layout
+  const { event, tables, unassignedGuests = [] } = layout
   const displayDate = new Intl.DateTimeFormat('hr-HR', { day: 'numeric', month: 'long', year: 'numeric' }).format(
     new Date(event.date)
   )
@@ -129,6 +130,13 @@ export default function PublicEventPage() {
             onFocusTable={setFocusedTableId}
             onCloseFocus={() => setFocusedTableId(null)}
             readOnly
+          />
+        </div>
+        <div className="mt-4 rounded-lg bg-white/80 p-4 shadow-card">
+          <SeatingAssignmentOverview
+            tables={tables}
+            guestsByTable={guestsByTable}
+            unassignedGuests={unassignedGuests}
           />
         </div>
       </section>

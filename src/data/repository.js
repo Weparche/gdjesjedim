@@ -224,6 +224,7 @@ export function createLocalRepository(storage) {
       return withDb((db) => {
         const event = db.events.find((e) => e.slug === slug)
         if (!event || event.published !== true) return null
+        const eventGuests = db.guests.filter((guest) => guest.eventId === event.id)
         const tables = db.tables
           .filter((table) => table.eventId === event.id)
           .map((table) => ({
@@ -233,11 +234,14 @@ export function createLocalRepository(storage) {
             shape: table.shape ?? 'round',
             x: table.x ?? 14,
             y: table.y ?? 18,
-            guests: db.guests
-              .filter((guest) => guest.eventId === event.id && guest.tableId === table.id)
+            guests: eventGuests
+              .filter((guest) => guest.tableId === table.id)
               .map((guest) => ({ id: guest.id, name: guest.name }))
           }))
-        return { event, tables }
+        const unassignedGuests = eventGuests
+          .filter((guest) => guest.tableId == null)
+          .map((guest) => ({ id: guest.id, name: guest.name }))
+        return { event, tables, unassignedGuests, guestCount: eventGuests.length }
       })
     },
 

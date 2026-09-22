@@ -376,11 +376,19 @@ async function getPublishedLayout(env, slug) {
     env.DB.prepare('SELECT * FROM tables WHERE event_id = ?1 ORDER BY rowid').bind(eventRow.id).all(),
     env.DB.prepare('SELECT id, name, table_id FROM guests WHERE event_id = ?1 ORDER BY rowid').bind(eventRow.id).all()
   ])
+  const unassignedGuests = guestRows.results
+    .filter((guest) => !guest.table_id)
+    .map((guest) => ({ id: guest.id, name: guest.name }))
   const tables = tableRows.results.map((row) => ({
     ...tableFromRow(row),
     guests: guestRows.results.filter((guest) => guest.table_id === row.id).map((guest) => ({ id: guest.id, name: guest.name }))
   }))
-  return { event: eventFromRow(eventRow), tables }
+  return {
+    event: eventFromRow(eventRow),
+    tables,
+    unassignedGuests,
+    guestCount: guestRows.results.length
+  }
 }
 
 function photoFromRow(row) {
