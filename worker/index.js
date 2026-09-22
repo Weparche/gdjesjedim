@@ -454,6 +454,16 @@ async function handleGallery(request, env, url) {
     return json(rows.results.map(photoFromRow), 200, { 'Cache-Control': 'public, max-age=5, stale-while-revalidate=30' })
   }
 
+  if (request.method === 'DELETE') {
+    if (!(await requireEventAdmin(request, env, event.id))) return error('Nedopušten pristup.', 401)
+    const rows = await env.DB.prepare('SELECT object_key, thumb_key FROM photos WHERE event_id = ?1').bind(event.id).all()
+    await env.DB.prepare('DELETE FROM photos WHERE event_id = ?1').bind(event.id).run()
+    await Promise.all(
+      rows.results.flatMap((row) => [env.PHOTOS.delete(row.object_key), env.PHOTOS.delete(row.thumb_key)])
+    )
+    return new Response(null, { status: 204 })
+  }
+
   if (request.method === 'POST') {
     const length = Number(request.headers.get('content-length') ?? 0)
     if (length > MAX_IMAGE_BYTES) return error('Fotografija može imati najviše 20 MB.', 413)
@@ -506,8 +516,11 @@ async function handlePhotoDelete(request, env, url) {
   const id = decodeURIComponent(match[1])
   const row = await env.DB.prepare('SELECT * FROM photos WHERE id = ?1').bind(id).first()
   if (!row) return error('Fotografija nije pronađena.', 404)
-  const token = request.headers.get('x-photo-token') ?? ''
-  if (!row.upload_token || !(await safeEqual(token, row.upload_token))) return error('Nedopušten pristup.', 403)
+  const isAdmin = await requireEventAdmin(request, env, row.event_id)
+  if (!isAdmin) {
+    const token = request.headers.get('x-photo-token') ?? ''
+    if (!row.upload_token || !(await safeEqual(token, row.upload_token))) return error('Nedopušten pristup.', 403)
+  }
   await env.DB.prepare('DELETE FROM photos WHERE id = ?1').bind(id).run()
   await Promise.all([env.PHOTOS.delete(row.object_key), env.PHOTOS.delete(row.thumb_key)])
   return new Response(null, { status: 204 })
