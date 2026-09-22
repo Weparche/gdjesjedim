@@ -58,3 +58,29 @@ export async function addLocalPhoto(eventSlug, file, dimensions = {}) {
   await transaction('readwrite', (store) => store.put(record))
   return publicPhoto(record)
 }
+
+export async function removeLocalPhoto(eventSlug, photoId) {
+  const database = await openDatabase()
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction(STORE_NAME, 'readwrite')
+    const store = tx.objectStore(STORE_NAME)
+    const request = store.get(photoId)
+    request.onsuccess = () => {
+      const record = request.result
+      if (!record || record.eventSlug !== eventSlug) {
+        reject(new Error('Fotografija nije pronađena.'))
+        return
+      }
+      store.delete(photoId)
+    }
+    request.onerror = () => reject(request.error)
+    tx.oncomplete = () => {
+      database.close()
+      resolve()
+    }
+    tx.onerror = () => {
+      database.close()
+      reject(tx.error)
+    }
+  })
+}

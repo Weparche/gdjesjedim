@@ -19,7 +19,7 @@ function corsHeaders(request) {
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, HEAD, POST, PATCH, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Name',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Name, X-Photo-Token',
     Vary: 'Origin'
   }
 }
@@ -391,8 +391,8 @@ async function getPublishedLayout(env, slug) {
   }
 }
 
-function photoFromRow(row) {
-  return {
+function photoFromRow(row, { includeDeleteToken = false } = {}) {
+  const photo = {
     id: row.id,
     originalName: row.original_name ?? undefined,
     width: row.width,
@@ -402,6 +402,8 @@ function photoFromRow(row) {
     url: `/media/${row.id}`,
     thumbnailUrl: `/media/${row.id}/thumbnail`
   }
+  if (includeDeleteToken && row.upload_token) photo.deleteToken = row.upload_token
+  return photo
 }
 
 async function handlePublic(request, env, url) {
@@ -470,6 +472,7 @@ async function handleGallery(request, env, url) {
     ])
 
     const id = crypto.randomUUID()
+    const uploadToken = crypto.randomUUID()
     const objectKey = `events/${event.id}/${id}.webp`
     const thumbKey = `events/${event.id}/${id}-thumb.webp`
     const [mainObject] = await Promise.all([
@@ -482,19 +485,32 @@ async function handleGallery(request, env, url) {
 
     try {
       await env.DB.prepare(
-        `INSERT INTO photos (id, event_id, object_key, thumb_key, original_name, width, height, byte_size)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`
-      ).bind(id, event.id, objectKey, thumbKey, originalName || null, info.width, info.height, mainObject?.size ?? 0).run()
+        `INSERT INTO photos (id, event_id, object_key, thumb_key, original_name, width, height, byte_size, upload_token)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`
+      ).bind(id, event.id, objectKey, thumbKey, originalName || null, info.width, info.height, mainObject?.size ?? 0, uploadToken).run()
     } catch (databaseError) {
       await Promise.all([env.PHOTOS.delete(objectKey), env.PHOTOS.delete(thumbKey)])
       throw databaseError
     }
 
     const row = await env.DB.prepare('SELECT * FROM photos WHERE id = ?1').bind(id).first()
-    return json(photoFromRow(row), 201)
+    return json(photoFromRow(row, { includeDeleteToken: true }), 201)
   }
 
   return error('Metoda nije podržana.', 405)
+}
+
+async function handlePhotoDelete(request, env, url) {
+  const match = url.pathname.match(/^\/api\/photos\/([^/]+)$/)
+  if (!match || request.method !== 'DELETE') return null
+  const id = decodeURIComponent(match[1])
+  const row = await env.DB.prepare('SELECT * FROM photos WHERE id = ?1').bind(id).first()
+  if (!row) return error('Fotografija nije pronađena.', 404)
+  const token = request.headers.get('x-photo-token') ?? ''
+  if (!row.upload_token || !(await safeEqual(token, row.upload_token))) return error('Nedopušten pristup.', 403)
+  await env.DB.prepare('DELETE FROM photos WHERE id = ?1').bind(id).run()
+  await Promise.all([env.PHOTOS.delete(row.object_key), env.PHOTOS.delete(row.thumb_key)])
+  return new Response(null, { status: 204 })
 }
 
 async function handleMedia(request, env, url) {
@@ -524,6 +540,7 @@ async function routeRequest(request, env) {
     ?? (await handleGuests(request, env, url))
     ?? (await handlePublic(request, env, url))
     ?? (await handleGallery(request, env, url))
+    ?? (await handlePhotoDelete(request, env, url))
     ?? error('Nije pronađeno.', 404)
 }
 

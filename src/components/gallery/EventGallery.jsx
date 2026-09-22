@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Camera, ChevronLeft, ChevronRight, ImagePlus, Images, LoaderCircle, X } from 'lucide-react'
+import { Camera, ChevronLeft, ChevronRight, ImagePlus, Images, LoaderCircle, Trash2, X } from 'lucide-react'
 import galleryRepository from '../../data/galleryRepository.js'
 
 function GalleryButton({ icon: Icon, children, onClick, disabled }) {
@@ -16,7 +16,7 @@ function GalleryButton({ icon: Icon, children, onClick, disabled }) {
   )
 }
 
-function PhotoViewer({ photos, index, onIndex, onClose }) {
+function PhotoViewer({ photos, index, onIndex, onClose, onDelete, deleting }) {
   const photo = photos[index]
 
   useEffect(() => {
@@ -33,9 +33,23 @@ function PhotoViewer({ photos, index, onIndex, onClose }) {
     <div className="fixed inset-0 z-50 flex flex-col bg-charcoal/95" role="dialog" aria-modal="true" aria-label="Pregled fotografije">
       <div className="flex min-h-16 items-center justify-between px-3 text-white">
         <span className="px-2 font-ui text-sm tabular-nums">{index + 1} / {photos.length}</span>
-        <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-pill bg-white/10" aria-label="Zatvori fotografiju">
-          <X size={24} aria-hidden="true" />
-        </button>
+        <div className="flex items-center gap-1">
+          {photo.canDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={deleting}
+              className="inline-flex h-11 items-center gap-1.5 rounded-pill bg-white/10 px-3 font-ui text-sm font-semibold text-white disabled:opacity-50"
+              aria-label="Obriši fotografiju"
+            >
+              <Trash2 size={18} aria-hidden="true" />
+              Obriši
+            </button>
+          )}
+          <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-pill bg-white/10" aria-label="Zatvori fotografiju">
+            <X size={24} aria-hidden="true" />
+          </button>
+        </div>
       </div>
       <div className="relative flex min-h-0 flex-1 items-center justify-center px-3 pb-6">
         <img src={photo.url} alt={`Fotografija ${index + 1}`} className="max-h-full max-w-full object-contain" />
@@ -60,6 +74,7 @@ export default function EventGallery({ slug }) {
   const [uploading, setUploading] = useState(0)
   const [error, setError] = useState('')
   const [viewerIndex, setViewerIndex] = useState(null)
+  const [deletingPhotoId, setDeletingPhotoId] = useState(null)
   const cameraInput = useRef(null)
   const galleryInput = useRef(null)
 
@@ -102,6 +117,29 @@ export default function EventGallery({ slug }) {
     if (added.length) setPhotos((current) => [...added.reverse(), ...current])
     if (cameraInput.current) cameraInput.current.value = ''
     if (galleryInput.current) galleryInput.current.value = ''
+  }
+
+  async function handleDeletePhoto(photoId) {
+    setError('')
+    setDeletingPhotoId(photoId)
+    try {
+      await galleryRepository.deletePhoto(slug, photoId)
+      const removedAt = photos.findIndex((photo) => photo.id === photoId)
+      const next = photos.filter((photo) => photo.id !== photoId)
+      setPhotos(next)
+      if (viewerIndex == null) return
+      if (next.length === 0) {
+        setViewerIndex(null)
+        return
+      }
+      if (removedAt === -1) return
+      if (viewerIndex > removedAt) setViewerIndex(viewerIndex - 1)
+      else if (viewerIndex === removedAt) setViewerIndex(Math.min(viewerIndex, next.length - 1))
+    } catch (caught) {
+      setError(caught.message || 'Fotografiju nije moguće obrisati.')
+    } finally {
+      setDeletingPhotoId(null)
+    }
   }
 
   return (
@@ -158,7 +196,14 @@ export default function EventGallery({ slug }) {
       )}
 
       {viewerIndex !== null && photos[viewerIndex] && (
-        <PhotoViewer photos={photos} index={viewerIndex} onIndex={setViewerIndex} onClose={() => setViewerIndex(null)} />
+        <PhotoViewer
+          photos={photos}
+          index={viewerIndex}
+          onIndex={setViewerIndex}
+          onClose={() => setViewerIndex(null)}
+          onDelete={() => handleDeletePhoto(photos[viewerIndex].id)}
+          deleting={deletingPhotoId === photos[viewerIndex].id}
+        />
       )}
     </section>
   )
