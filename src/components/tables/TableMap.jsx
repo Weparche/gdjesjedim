@@ -302,7 +302,7 @@ export default function TableMap({
       data-zoom={view.zoom}
       data-pan-x={Math.round(view.x)}
       data-pan-y={Math.round(view.y)}
-      className={`relative min-h-[432px] overflow-hidden rounded-lg border border-cream bg-cover bg-center shadow-inner ${panGesture ? 'cursor-grabbing' : 'cursor-grab'}`}
+      className={`relative min-h-[518px] overflow-hidden rounded-lg border border-cream bg-cover bg-center shadow-inner ${panGesture ? 'cursor-grabbing' : 'cursor-grab'}`}
       style={{ backgroundImage: "url('/assets/seating-paper-bg.png')", touchAction: focusedTable ? 'auto' : 'none' }}
       onPointerDown={startPanning}
       onPointerMove={moveInteraction}
