@@ -11,22 +11,31 @@ async function remoteRequest(path, options) {
   return payload
 }
 
+function withRemoteMediaUrls(photo) {
+  return {
+    ...photo,
+    url: apiUrl(photo.url),
+    thumbnailUrl: apiUrl(photo.thumbnailUrl)
+  }
+}
+
 const galleryRepository = {
   async listPhotos(slug) {
     if (useLocal) return listLocalPhotos(slug)
-    return remoteRequest(`/api/events/${encodeURIComponent(slug)}/photos`)
+    const photos = await remoteRequest(`/api/events/${encodeURIComponent(slug)}/photos`)
+    return photos.map(withRemoteMediaUrls)
   },
   async uploadPhoto(slug, sourceFile) {
     const prepared = await preparePhoto(sourceFile)
     if (useLocal) return addLocalPhoto(slug, prepared.file, prepared)
-    return remoteRequest(`/api/events/${encodeURIComponent(slug)}/photos`, {
+    return withRemoteMediaUrls(await remoteRequest(`/api/events/${encodeURIComponent(slug)}/photos`, {
       method: 'POST',
       headers: {
         'Content-Type': prepared.file.type,
         'X-File-Name': encodeURIComponent(sourceFile.name)
       },
       body: prepared.file
-    })
+    }))
   }
 }
 
