@@ -12,6 +12,11 @@ import SeatingAssignmentOverview from '../components/tables/SeatingAssignmentOve
 import EventGallery from '../components/gallery/EventGallery.jsx'
 import { useEventDraft } from '../context/EventDraftContext.jsx'
 import { getPublicEventExtras } from '../data/publicEventExtras.js'
+import {
+  clearPublicAdminSession,
+  hasPublicAdminSession,
+  setPublicAdminSession
+} from '../data/photoAdminSession.js'
 import repository from '../data/repositoryInstance.js'
 
 export default function PublicEventPage() {
@@ -22,6 +27,7 @@ export default function PublicEventPage() {
   const [scheduleItems, setScheduleItems] = useState([])
   const [focusedTableId, setFocusedTableId] = useState(null)
   const [adminSheetOpen, setAdminSheetOpen] = useState(false)
+  const [galleryAdminActive, setGalleryAdminActive] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -36,6 +42,11 @@ export default function PublicEventPage() {
     load()
   }, [slug])
 
+  useEffect(() => {
+    if (!layout?.event?.id) return
+    setGalleryAdminActive(hasPublicAdminSession(sessionStorage, layout.event.id))
+  }, [layout?.event?.id])
+
   const guestsByTable = useMemo(
     () => (layout?.tables ?? []).reduce((resultMap, table) => ({ ...resultMap, [table.id]: table.guests }), {}),
     [layout]
@@ -43,6 +54,8 @@ export default function PublicEventPage() {
 
   async function handleAdminUnlock(password) {
     const unlockedEvent = await repository.unlockAdmin(slug, password)
+    setPublicAdminSession(sessionStorage, unlockedEvent.id)
+    setGalleryAdminActive(true)
     setEvent(unlockedEvent)
     navigate('/create/tables')
   }
@@ -77,13 +90,19 @@ export default function PublicEventPage() {
       <div className="mt-5">
         <AccessModeSwitch
           adminPending={adminSheetOpen}
-          onGuest={() => setAdminSheetOpen(false)}
+          onGuest={() => {
+            if (layout?.event?.id) {
+              clearPublicAdminSession(sessionStorage, layout.event.id)
+              setGalleryAdminActive(false)
+            }
+            setAdminSheetOpen(false)
+          }}
           onAdmin={() => setAdminSheetOpen(true)}
         />
       </div>
 
       <div className="mt-7">
-        <EventGallery slug={slug} eventId={event.id} />
+        <EventGallery slug={slug} eventId={event.id} adminSessionActive={galleryAdminActive} />
       </div>
 
       {showScheduleSection && (

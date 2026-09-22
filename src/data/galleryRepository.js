@@ -2,6 +2,7 @@ import { addLocalPhoto, listLocalPhotos, removeLocalPhoto } from './localGallery
 import { preparePhoto } from '../lib/photo.js'
 import { apiUrl } from '../lib/apiBase.js'
 import { getEventAdminToken } from './apiRepository.js'
+import { hasPublicAdminSession } from './photoAdminSession.js'
 import {
   getPhotoDeleteToken,
   markDeletablePhotos,
@@ -34,8 +35,20 @@ function withRemoteMediaUrls(photo) {
   }
 }
 
-function isEventAdmin(storage, eventId) {
-  return Boolean(getEventAdminToken(storage, eventId))
+function sessionStorage() {
+  try {
+    return window.sessionStorage
+  } catch {
+    return undefined
+  }
+}
+
+/** Admin smije brisati tuđe slike samo nakon admin prijave na javnoj stranici (isti tab). */
+function isGalleryAdmin(storage, eventId) {
+  return (
+    hasPublicAdminSession(sessionStorage(), eventId)
+    && Boolean(getEventAdminToken(storage, eventId))
+  )
 }
 
 const galleryRepository = {
@@ -46,7 +59,7 @@ const galleryRepository = {
     }
     const store = storage()
     const photos = (await remoteRequest(`/api/events/${encodeURIComponent(slug)}/photos`)).map(withRemoteMediaUrls)
-    if (isEventAdmin(store, eventId)) return photos.map((photo) => ({ ...photo, canDelete: true }))
+    if (isGalleryAdmin(store, eventId)) return photos.map((photo) => ({ ...photo, canDelete: true }))
     return markDeletablePhotos(store, slug, photos)
   },
   async uploadPhoto(slug, sourceFile) {
@@ -69,9 +82,10 @@ const galleryRepository = {
       return
     }
     const store = storage()
-    const adminToken = getEventAdminToken(store, eventId)
     const headers = {}
-    if (adminToken) headers.Authorization = `Bearer ${adminToken}`
+    if (isGalleryAdmin(store, eventId)) {
+      headers.Authorization = `Bearer ${getEventAdminToken(store, eventId)}`
+    }
     else {
       const token = getPhotoDeleteToken(store, slug, photoId)
       if (!token) throw new Error('Ovu fotografiju može obrisati samo osoba koja ju je dodala.')
@@ -94,8 +108,9 @@ const galleryRepository = {
       await Promise.all(photos.map((photo) => removeLocalPhoto(slug, photo.id)))
       return
     }
-    const adminToken = getEventAdminToken(storage(), eventId)
-    if (!adminToken) throw new Error('Samo administrator događaja može obrisati cijelu galeriju.')
+    const store = storage()
+    if (!isGalleryAdmin(store, eventId)) throw new Error('Samo administrator događaja može obrisati cijelu galeriju.')
+    const adminToken = getEventAdminToken(store, eventId)
     const response = await fetch(apiUrl(`/api/events/${encodeURIComponent(slug)}/photos`), {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${adminToken}` }

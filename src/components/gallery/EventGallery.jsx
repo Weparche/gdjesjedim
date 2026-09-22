@@ -68,7 +68,7 @@ function PhotoViewer({ photos, index, onIndex, onClose, onDelete, deleting }) {
   )
 }
 
-export default function EventGallery({ slug, eventId }) {
+export default function EventGallery({ slug, eventId, adminSessionActive = false }) {
   const [photos, setPhotos] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(0)
@@ -97,7 +97,7 @@ export default function EventGallery({ slug, eventId }) {
       active = false
       if (refreshTimer) window.clearInterval(refreshTimer)
     }
-  }, [slug, eventId])
+  }, [slug, eventId, adminSessionActive])
 
   async function handleFiles(fileList) {
     const files = Array.from(fileList ?? [])
