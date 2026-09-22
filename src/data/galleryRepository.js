@@ -1,10 +1,11 @@
 import { addLocalPhoto, listLocalPhotos } from './localGalleryStore.js'
 import { preparePhoto } from '../lib/photo.js'
+import { apiUrl } from '../lib/apiBase.js'
 
 const useLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname)
 
 async function remoteRequest(path, options) {
-  const response = await fetch(path, options)
+  const response = await fetch(apiUrl(path), options)
   const payload = await response.json().catch(() => null)
   if (!response.ok) throw new Error(payload?.error ?? 'Fotografiju nije moguće spremiti.')
   return payload

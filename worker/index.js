@@ -8,6 +8,28 @@ const DEFAULT_TABLE_POSITIONS = [
   { x: 72, y: 78 }
 ]
 
+const ALLOWED_ORIGINS = new Set([
+  'https://gdjesjedim.pages.dev',
+  'https://gdjesjedim.ig29007.workers.dev'
+])
+
+function corsHeaders(request) {
+  const origin = request.headers.get('Origin')
+  if (!origin || !ALLOWED_ORIGINS.has(origin)) return {}
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, HEAD, POST, PATCH, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Name',
+    Vary: 'Origin'
+  }
+}
+
+function withCors(response, request) {
+  const headers = new Headers(response.headers)
+  for (const [key, value] of Object.entries(corsHeaders(request))) headers.set(key, value)
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers })
+}
+
 function json(data, status = 200, headers = {}) {
   return Response.json(data, {
     status,
@@ -499,12 +521,16 @@ async function routeRequest(request, env) {
 
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url)
+    if (request.method === 'OPTIONS' && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/media/'))) {
+      return new Response(null, { status: 204, headers: corsHeaders(request) })
+    }
     try {
-      return await routeRequest(request, env)
+      return withCors(await routeRequest(request, env), request)
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : String(caught)
-      console.error(JSON.stringify({ message: 'request_failed', path: new URL(request.url).pathname, error: message }))
-      return error('Dogodila se neočekivana greška.', 500)
+      console.error(JSON.stringify({ message: 'request_failed', path: url.pathname, error: message }))
+      return withCors(error('Dogodila se neočekivana greška.', 500), request)
     }
   }
 }
